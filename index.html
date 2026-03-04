@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interactive PRD: POS SaaS Offline-First</title>
+    <title>POSify SaaS - Interactive PRD Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: #F8FAFC;
-            color: #0F172A;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #FDFDFD;
+            color: #1A1A1A;
             scroll-behavior: smooth;
         }
         .chart-container {
@@ -23,335 +23,399 @@
             height: 300px;
             max-height: 350px;
         }
-        @media (min-width: 768px) {
-            .chart-container {
-                height: 350px;
-            }
-        }
         .glass-nav {
-            background: rgba(255, 255, 255, 0.85);
+            background: rgba(255, 255, 255, 0.8);
             backdrop-filter: blur(12px);
-            border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
         }
-        .interactive-element {
+        .card-interactive {
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .interactive-element:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.08);
+        .card-interactive:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.1);
         }
-        .content-tab {
-            display: none;
-            animation: fade-in 0.4s ease-out forwards;
-        }
-        .content-tab.active {
-            display: block;
-        }
-        @keyframes fade-in {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .pulse-online {
+        .status-pulse-on {
             animation: pulse-green 2s infinite;
+        }
+        .status-pulse-off {
+            animation: pulse-amber 2s infinite;
         }
         @keyframes pulse-green {
             0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
             70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
             100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
         }
-        .pulse-offline {
-            animation: pulse-orange 2s infinite;
-        }
-        @keyframes pulse-orange {
+        @keyframes pulse-amber {
             0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
             70% { box-shadow: 0 0 0 10px rgba(245, 158, 11, 0); }
             100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
         }
-        .hide-scrollbar::-webkit-scrollbar {
-            display: none;
-        }
-        .hide-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.4s ease; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
-<body class="antialiased selection:bg-indigo-200 selection:text-indigo-900">
+<body class="antialiased">
 
-    <!-- Chosen Palette: Trustworthy Slate & Indigo (#4F46E5) -->
-    <!-- Application Structure Plan: A centralized, dashboard-like SPA. It breaks the PRD into 6 logical, interactive sections to ease cognitive load. 1) Executive Overview (Context). 2) User Stories (Role-based exploration to answer "what are we building?"). 3) Tiers/Pricing (Comparative capabilities). 4) Offline-First Architecture (Interactive simulation of the core USP). 5) KPIs & NFRs (Visual targets). 6) Roadmap (Interactive timeline). -->
-    <!-- Visualization & Content Choices: 
-         - User Stories -> Goal: Organize -> Interactive Tabs (HTML/CSS). Allows viewing requirements by role without overwhelming text.
-         - Target Market -> Goal: Inform/Composition -> Donut Chart (Chart.js). Visualizes audience distribution.
-         - Tiers -> Goal: Compare -> Radar Chart (Chart.js). Effectively compares multi-dimensional features (Outlet limits vs CRM vs Reporting) across Lite, Pro, and Enterprise.
-         - Architecture -> Goal: Process -> HTML/CSS State Simulation. A toggle switch visually changes connection states to explain "PowerSync" without SVG.
-         - KPIs -> Goal: Inform -> Half-Doughnut Gauges (Chart.js). Immediately conveys performance thresholds (<200ms, 99.9%).
-         - Confirming NO SVG or Mermaid usage, utilizing Unicode and CSS styling. -->
+    <!-- Chosen Palette: Indigo & Emerald Vibrant -->
+    <!-- Application Structure Plan:
+        1. Executive Hero: Highlighting the Lifetime License USP.
+        2. Functional Grid: Presenting sections 1-6 through a dashboard layout.
+        3. User Story Explorer: Interactive tabs for roles (Section 7).
+        4. Architecture & Sync Simulation: Visualizing the offline-first logic.
+        5. Deep Dive Document: Searchable/Collapsible list of all 12 points for reference.
+    -->
+    <!-- Visualization & Content Choices:
+        - Market Segment -> Donut Chart (Chart.js)
+        - Performance Metrics -> Gauge Charts (Chart.js)
+        - Data Validation -> Structured Table
+        - Roadmap -> Visual Timeline
+        - Confirming NO SVG or Mermaid JS used.
+    -->
     <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
 
     <nav class="fixed top-0 w-full z-50 glass-nav">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
-                <div class="flex items-center gap-2">
-                    <div class="w-8 h-8 rounded bg-indigo-600 text-white flex items-center justify-center font-bold text-lg">&#x1F4BB;</div>
-                    <span class="font-bold text-xl tracking-tight text-slate-900">POS SaaS PRD</span>
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-black text-xl tracking-tighter shadow-indigo-200 shadow-lg">P</div>
+                    <span class="font-bold text-lg tracking-tight text-slate-800">POSify SaaS <span class="text-indigo-600">PRD</span></span>
                 </div>
-                <div class="hidden md:flex space-x-6 overflow-x-auto hide-scrollbar">
-                    <button onclick="navTo('overview')" class="text-sm font-medium text-slate-600 hover:text-indigo-600">Ringkasan</button>
-                    <button onclick="navTo('user-stories')" class="text-sm font-medium text-slate-600 hover:text-indigo-600">User Stories</button>
-                    <button onclick="navTo('tiers')" class="text-sm font-medium text-slate-600 hover:text-indigo-600">Paket Tier</button>
-                    <button onclick="navTo('architecture')" class="text-sm font-medium text-slate-600 hover:text-indigo-600">Arsitektur</button>
-                    <button onclick="navTo('kpi')" class="text-sm font-medium text-slate-600 hover:text-indigo-600">KPI & NFR</button>
+                <div class="hidden md:flex space-x-8 items-center">
+                    <a href="#overview" class="text-sm font-semibold text-slate-600 hover:text-indigo-600 transition-colors">Overview</a>
+                    <a href="#tiers" class="text-sm font-semibold text-slate-600 hover:text-indigo-600 transition-colors">Tiers</a>
+                    <a href="#stories" class="text-sm font-semibold text-slate-600 hover:text-indigo-600 transition-colors">User Stories</a>
+                    <a href="#architecture" class="text-sm font-semibold text-slate-600 hover:text-indigo-600 transition-colors">Sync Flow</a>
+                    <a href="#full-doc" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all">Baca Dokumen</a>
                 </div>
             </div>
         </div>
     </nav>
 
-    <main class="pt-24 pb-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-24">
-
-        <section id="overview" class="scroll-mt-24">
-            <div class="bg-white rounded-3xl p-8 md:p-12 shadow-sm border border-slate-200">
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-                    <div>
-                        <div class="inline-flex items-center rounded-full px-3 py-1 text-xs font-bold text-indigo-700 bg-indigo-100 mb-6 uppercase tracking-wider">
-                            MVP Target Release
-                        </div>
-                        <h1 class="text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight mb-6">
-                            Revolusi POS <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-blue-500">Offline-First</span>
-                        </h1>
-                        <p class="text-lg text-slate-600 mb-8 leading-relaxed">
-                            Aplikasi sistem kasir SaaS khusus UMKM yang menawarkan alternatif terjangkau dengan stabilitas operasional absolut. Menggunakan <strong>SQLite lokal</strong> dan <strong>Supabase</strong> untuk sinkronisasi otomatis.
-                        </p>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                                <div class="text-2xl mb-2 text-indigo-600">&#x1F4B8;</div>
-                                <h3 class="font-bold text-slate-800 text-sm">Biaya Efisien</h3>
-                                <p class="text-xs text-slate-500 mt-1">Solusi terjangkau dibanding kompetitor.</p>
-                            </div>
-                            <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                                <div class="text-2xl mb-2 text-indigo-600">&#x1F4E1;</div>
-                                <h3 class="font-bold text-slate-800 text-sm">Tahan Banting</h3>
-                                <p class="text-xs text-slate-500 mt-1">Anti-crash meski internet mati total.</p>
+    <header id="overview" class="pt-32 pb-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-indigo-50/50 to-transparent">
+        <div class="max-w-7xl mx-auto">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+                <div>
+                    <div class="inline-flex items-center gap-2 bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-xs font-bold mb-6 tracking-wide uppercase">
+                        <span>&#x1F4A1;</span> MVP Strategi: Lifetime License
+                    </div>
+                    <h1 class="text-4xl md:text-6xl font-extrabold text-slate-900 leading-[1.15] mb-6">
+                        Solusi POS <br/><span class="text-indigo-600">Offline-First</span> Tanpa Beban Langganan.
+                    </h1>
+                    <p class="text-lg text-slate-600 mb-8 leading-relaxed max-w-xl">
+                        Membantu UMKM Ritel & F&B berkembang dengan sistem kasir mandiri. 100% fungsional tanpa internet, bayar sekali pakai selamanya (Tier 1), dan hierarki peran yang fleksibel.
+                    </p>
+                    <div class="flex flex-wrap gap-4">
+                        <div class="flex items-center gap-3 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+                            <span class="text-2xl">&#x1F4BE;</span>
+                            <div>
+                                <h4 class="font-bold text-sm">SQLite Local</h4>
+                                <p class="text-xs text-slate-500">Data aman di perangkat.</p>
                             </div>
                         </div>
-                    </div>
-                    <div class="bg-slate-50 rounded-2xl p-6 border border-slate-200 flex flex-col h-full">
-                        <h3 class="text-lg font-bold text-center text-slate-800 mb-2">Target Pengguna</h3>
-                        <p class="text-xs text-center text-slate-500 mb-6">Distribusi UMKM yang membutuhkan sistem terpusat dan stabil.</p>
-                        <div class="chart-container flex-grow">
-                            <canvas id="targetMarketChart"></canvas>
+                        <div class="flex items-center gap-3 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+                            <span class="text-2xl">&#x1F512;</span>
+                            <div>
+                                <h4 class="font-bold text-sm">Validasi Lisensi</h4>
+                                <p class="text-xs text-slate-500">Fingerprint Perangkat.</p>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </section>
-
-        <section id="user-stories" class="scroll-mt-24">
-            <div class="mb-10 text-center max-w-3xl mx-auto">
-                <h2 class="text-3xl font-bold text-slate-900 mb-4">User Stories & Fungsionalitas</h2>
-                <p class="text-slate-600">
-                    Mendefinisikan fungsionalitas aplikasi berdasarkan peran pengguna (Role-Based Access). Eksplorasi apa yang dapat dilakukan oleh masing-masing peran di dalam sistem POS ini.
-                </p>
-            </div>
-
-            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col md:flex-row">
-                <div class="w-full md:w-1/3 bg-slate-50 border-r border-slate-200 p-6 flex flex-col gap-3">
-                    <button onclick="showStory('owner')" id="btn-owner" class="story-btn w-full text-left p-4 rounded-xl font-bold transition-all border-2 border-indigo-500 bg-indigo-50 text-indigo-700 flex items-center gap-3">
-                        <span class="text-2xl">&#x1F4BC;</span> Peran: Owner
-                    </button>
-                    <button onclick="showStory('kasir')" id="btn-kasir" class="story-btn w-full text-left p-4 rounded-xl font-semibold transition-all border-2 border-transparent hover:bg-slate-100 text-slate-600 flex items-center gap-3">
-                        <span class="text-2xl">&#x1F4B3;</span> Peran: Kasir
-                    </button>
-                    <button onclick="showStory('supervisor')" id="btn-supervisor" class="story-btn w-full text-left p-4 rounded-xl font-semibold transition-all border-2 border-transparent hover:bg-slate-100 text-slate-600 flex items-center gap-3">
-                        <span class="text-2xl">&#x1F511;</span> Peran: Supervisor
-                    </button>
-                </div>
-                <div class="w-full md:w-2/3 p-6 md:p-10 relative">
-                    <div id="story-owner" class="content-tab active">
-                        <h3 class="text-2xl font-bold text-slate-800 mb-6 border-b border-slate-100 pb-4">Kebutuhan Owner (Pemilik)</h3>
-                        <div class="space-y-4" id="list-owner"></div>
-                    </div>
-                    <div id="story-kasir" class="content-tab">
-                        <h3 class="text-2xl font-bold text-slate-800 mb-6 border-b border-slate-100 pb-4">Kebutuhan Kasir (Operasional)</h3>
-                        <div class="space-y-4" id="list-kasir"></div>
-                    </div>
-                    <div id="story-supervisor" class="content-tab">
-                        <h3 class="text-2xl font-bold text-slate-800 mb-6 border-b border-slate-100 pb-4">Kebutuhan Supervisor</h3>
-                        <div class="space-y-4" id="list-supervisor"></div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section id="tiers" class="scroll-mt-24">
-            <div class="mb-10 max-w-3xl">
-                <h2 class="text-3xl font-bold text-slate-900 mb-4">Struktur Paket SaaS (Tiers)</h2>
-                <p class="text-slate-600">
-                    Pendekatan Multi-Tenant memungkinkan sistem berkembang bersama skala bisnis pengguna. Klik pada paket di bawah ini untuk membandingkan kapabilitas fiturnya.
-                </p>
-            </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
-                <div class="grid grid-cols-1 gap-4">
-                    <button onclick="updateTier('lite')" id="card-lite" class="tier-card interactive-element text-left bg-white p-6 rounded-2xl border-2 border-slate-200 focus:outline-none relative overflow-hidden group">
-                        <h3 class="text-xl font-bold text-slate-800 mb-1">Paket Lite <span class="text-xs font-semibold bg-slate-100 text-slate-600 px-2 py-1 rounded ml-2">Gratis</span></h3>
-                        <p class="text-sm text-slate-500 mb-3">1 Outlet, 1 Perangkat. Full Offline Mode & Laporan Dasar.</p>
-                        <div class="text-xs font-bold text-indigo-600 hidden group-[.active]:block">Menampilkan Metrik &#x2192;</div>
-                    </button>
-
-                    <button onclick="updateTier('pro')" id="card-pro" class="tier-card active interactive-element text-left bg-white p-6 rounded-2xl border-2 border-indigo-500 shadow-md focus:outline-none relative overflow-hidden group">
-                        <div class="absolute top-0 right-0 bg-indigo-500 text-white text-[10px] font-bold px-3 py-1 rounded-bl-lg">REKOMENDASI</div>
-                        <h3 class="text-xl font-bold text-slate-800 mb-1">Paket Pro <span class="text-xs font-semibold bg-indigo-100 text-indigo-700 px-2 py-1 rounded ml-2">Menengah</span></h3>
-                        <p class="text-sm text-slate-500 mb-3">Maks 3 Outlet. Varian Produk, Laporan Laba/Rugi, Database Pelanggan.</p>
-                        <div class="text-xs font-bold text-indigo-600 block">Menampilkan Metrik &#x2192;</div>
-                    </button>
-
-                    <button onclick="updateTier('ent')" id="card-ent" class="tier-card interactive-element text-left bg-white p-6 rounded-2xl border-2 border-slate-200 focus:outline-none relative overflow-hidden group">
-                        <h3 class="text-xl font-bold text-slate-800 mb-1">Enterprise <span class="text-xs font-semibold bg-blue-100 text-blue-700 px-2 py-1 rounded ml-2">Komplit</span></h3>
-                        <p class="text-sm text-slate-500 mb-3">Outlet Unlimited. Manajemen Resep F&B, Multi-Gudang, Program Loyalitas.</p>
-                        <div class="text-xs font-bold text-indigo-600 hidden group-[.active]:block">Menampilkan Metrik &#x2192;</div>
-                    </button>
-                </div>
-                
-                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col h-full min-h-[400px]">
-                    <h3 class="font-bold text-slate-800 text-center mb-1">Komparasi Fitur Lintas Tier</h3>
-                    <p id="tier-desc" class="text-xs text-slate-500 text-center mb-6">Visualisasi area kapabilitas untuk Paket Pro.</p>
-                    <div class="chart-container flex-grow">
-                        <canvas id="tierRadarChart"></canvas>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section id="architecture" class="scroll-mt-24">
-            <div class="mb-10 text-center max-w-3xl mx-auto">
-                <h2 class="text-3xl font-bold text-slate-900 mb-4">Simulasi Hybrid Offline-First</h2>
-                <p class="text-slate-600">
-                    Interaksikan tombol jaringan di bawah untuk melihat bagaimana transaksi diamankan secara lokal saat internet terputus, lalu disinkronisasi oleh PowerSync secara otomatis.
-                </p>
-            </div>
-
-            <div class="bg-slate-900 rounded-3xl p-6 md:p-12 shadow-xl border border-slate-800 relative">
-                <div class="flex justify-center mb-12 relative z-10">
-                    <div class="bg-slate-800 p-1.5 rounded-xl flex items-center gap-1 border border-slate-700">
-                        <button id="btn-online" class="px-6 py-2.5 rounded-lg text-sm font-bold bg-emerald-500 text-white shadow transition-all">Jaringan: Online</button>
-                        <button id="btn-offline" class="px-6 py-2.5 rounded-lg text-sm font-bold text-slate-400 hover:text-white transition-all">Simulasi Putus Jaringan</button>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 relative z-10">
-                    <div id="node-kasir" class="bg-white p-6 rounded-2xl border-2 border-emerald-500 pulse-online text-center transition-all duration-300">
-                        <div class="text-5xl mb-4">&#x1F4F1;</div>
-                        <h3 class="font-bold text-slate-900 text-lg mb-1">Kasir Frontend</h3>
-                        <p class="text-xs font-semibold text-slate-500 mb-4">Flutter / React Native</p>
-                        <div class="bg-slate-100 p-3 rounded-xl border border-slate-200 text-left">
-                            <h4 class="text-sm font-bold text-slate-800 mb-1">&#x1F4BE; SQLite Lokal</h4>
-                            <p id="text-kasir" class="text-xs text-slate-600 h-16">Mencatat checkout secara real-time. Sinkronisasi instan ke Cloud.</p>
+                <div class="relative">
+                    <div class="bg-white rounded-[2.5rem] p-8 shadow-2xl border border-slate-100 relative z-10">
+                        <h3 class="font-bold text-slate-800 text-center mb-6">Analisis Target Pasar UMKM</h3>
+                        <div class="chart-container">
+                            <canvas id="marketChart"></canvas>
                         </div>
+                        <p class="mt-6 text-xs text-slate-500 text-center italic">Prioritas utama pada UMKM F&B dan Ritel dengan frekuensi transaksi tinggi.</p>
                     </div>
-
-                    <div class="flex flex-col items-center justify-center relative py-6">
-                        <div class="hidden md:block absolute w-full h-1 bg-slate-700 top-1/2 -translate-y-1/2 -z-10"></div>
-                        <div class="bg-slate-800 border-2 border-slate-600 p-5 rounded-full text-center z-10 w-32 h-32 flex flex-col items-center justify-center shadow-lg">
-                            <h3 class="font-bold text-slate-200 text-xs tracking-wider">POWERSYNC</h3>
-                            <div id="icon-sync" class="text-3xl text-emerald-400 mt-2 font-bold">&#x21C4;</div>
-                        </div>
-                        <p id="text-sync" class="mt-6 bg-slate-800 text-xs text-slate-300 py-3 px-4 rounded-xl border border-slate-700 text-center w-full min-h-[60px]">
-                            Aliran data dua arah aktif (Push & Pull).
-                        </p>
-                    </div>
-
-                    <div id="node-cloud" class="bg-slate-50 p-6 rounded-2xl border-2 border-emerald-500 text-center transition-all duration-300">
-                        <div class="text-5xl mb-4">&#x2601;</div>
-                        <h3 class="font-bold text-slate-900 text-lg mb-1">Cloud Database</h3>
-                        <p class="text-xs font-semibold text-slate-500 mb-4">Supabase RLS + Go Fiber</p>
-                        <div class="bg-white p-3 rounded-xl border border-slate-200 text-left">
-                            <h4 class="text-sm font-bold text-slate-800 mb-1">&#x1F512; Server Validasi</h4>
-                            <p id="text-cloud" class="text-xs text-slate-600 h-16">Memproses checkout, memotong stok terpusat untuk cegah overselling.</p>
-                        </div>
-                    </div>
+                    <div class="absolute -top-10 -right-10 w-40 h-40 bg-indigo-200 rounded-full blur-3xl opacity-30"></div>
+                    <div class="absolute -bottom-10 -left-10 w-40 h-40 bg-emerald-200 rounded-full blur-3xl opacity-30"></div>
                 </div>
             </div>
-        </section>
+        </div>
+    </header>
 
-        <section id="kpi" class="scroll-mt-24">
-            <div class="mb-10 text-center">
-                <h2 class="text-3xl font-bold text-slate-900 mb-4">KPI & Non-Functional Requirements</h2>
-                <p class="text-slate-600 max-w-2xl mx-auto">
-                    Kriteria metrik kesuksesan MVP yang menjamin kenyamanan pengguna dan stabilitas server skala tinggi.
-                </p>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col">
-                    <h3 class="font-bold text-slate-800 text-center text-sm mb-1">Waktu Respons API</h3>
-                    <p class="text-[10px] text-slate-500 text-center uppercase tracking-wide mb-4">Target Checkout Online</p>
-                    <div class="chart-container flex-grow max-h-[120px]">
-                        <canvas id="kpiResponse"></canvas>
-                    </div>
-                    <div class="text-center mt-2 font-black text-2xl text-emerald-500">&lt; 200ms</div>
-                </div>
-                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col">
-                    <h3 class="font-bold text-slate-800 text-center text-sm mb-1">Skalabilitas Backend</h3>
-                    <p class="text-[10px] text-slate-500 text-center uppercase tracking-wide mb-4">Throughput Go Fiber</p>
-                    <div class="chart-container flex-grow max-h-[120px]">
-                        <canvas id="kpiRps"></canvas>
-                    </div>
-                    <div class="text-center mt-2 font-black text-2xl text-indigo-500">5.000 RPS</div>
-                </div>
-                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col">
-                    <h3 class="font-bold text-slate-800 text-center text-sm mb-1">Reliabilitas Sync</h3>
-                    <p class="text-[10px] text-slate-500 text-center uppercase tracking-wide mb-4">Akurasi Resolusi Offline</p>
-                    <div class="chart-container flex-grow max-h-[120px]">
-                        <canvas id="kpiSync"></canvas>
-                    </div>
-                    <div class="text-center mt-2 font-black text-2xl text-blue-500">99.9%</div>
-                </div>
-                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-center items-center">
-                    <h3 class="font-bold text-slate-800 text-center text-sm mb-1">Target Adopsi SaaS</h3>
-                    <p class="text-[10px] text-slate-500 text-center uppercase tracking-wide mb-6">Bulan Ke-3 MVP</p>
-                    <div class="text-5xl mb-4">&#x1F680;</div>
-                    <div class="text-center font-black text-3xl text-slate-800">50 DAU</div>
-                    <p class="text-xs text-slate-500 mt-2">Active Tenants</p>
-                </div>
+    <section id="tiers" class="py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl font-bold text-slate-900 mb-4">Struktur Bisnis & Tier Produk</h2>
+                <p class="text-slate-500 max-w-2xl mx-auto">Kami menawarkan fleksibilitas penuh antara kepemilikan data lokal dan kemudahan sinkronisasi cloud.</p>
             </div>
             
-            <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="bg-slate-50 border border-slate-200 rounded-2xl p-6">
-                    <h4 class="font-bold text-slate-800 mb-4 flex items-center gap-2">&#x1F6AB; Out of Scope (MVP)</h4>
-                    <ul class="text-sm text-slate-600 space-y-2">
-                        <li>- Integrasi Otomatis GoFood/GrabFood.</li>
-                        <li>- Multi-currency (Hanya mendukung IDR).</li>
-                        <li>- Website Toko Online untuk pembeli.</li>
-                        <li>- HRIS Lanjutan (Payroll / BPJS).</li>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="bg-slate-50 rounded-3xl p-8 border-2 border-indigo-600 relative overflow-hidden card-interactive">
+                    <div class="absolute top-0 right-0 bg-indigo-600 text-white px-6 py-2 font-bold text-xs rounded-bl-2xl">LIFETIME</div>
+                    <h3 class="text-2xl font-bold mb-2">Tier 1: Lite</h3>
+                    <p class="text-indigo-600 font-bold mb-6">Sekali Bayar (Seumur Hidup)</p>
+                    <ul class="space-y-4 text-slate-600 mb-8">
+                        <li class="flex items-center gap-3">
+                            <span class="text-indigo-600 font-bold">&#x2713;</span> 1 Outlet (Locked Device)
+                        </li>
+                        <li class="flex items-center gap-3">
+                            <span class="text-indigo-600 font-bold">&#x2713;</span> Unlimited Local Employees
+                        </li>
+                        <li class="flex items-center gap-3">
+                            <span class="text-indigo-600 font-bold">&#x2713;</span> Full Offline SQLite Database
+                        </li>
+                        <li class="flex items-center gap-3">
+                            <span class="text-indigo-600 font-bold">&#x2713;</span> Manual Import/Export Excel
+                        </li>
                     </ul>
+                    <div class="bg-indigo-100/50 p-4 rounded-xl text-xs text-indigo-800">
+                        Cocok untuk warung tunggal yang ingin hemat biaya tanpa langganan.
+                    </div>
                 </div>
-                <div class="bg-slate-50 border border-slate-200 rounded-2xl p-6">
-                    <h4 class="font-bold text-slate-800 mb-4 flex items-center gap-2">&#x1F4BB; Syarat Hardware Min</h4>
-                    <ul class="text-sm text-slate-600 space-y-2">
-                        <li>- OS: Android 10+ / iOS 14+</li>
-                        <li>- RAM: Min 3GB (Rekomendasi 4GB+)</li>
-                        <li>- Storage: Min 1GB bebas untuk SQLite Cache</li>
-                        <li>- Printer: Bluetooth Thermal (ESC/POS)</li>
+
+                <div class="bg-white rounded-3xl p-8 border border-slate-200 card-interactive">
+                    <h3 class="text-2xl font-bold mb-2">Tier 2: Pro</h3>
+                    <p class="text-emerald-600 font-bold mb-6">Berlangganan (SaaS)</p>
+                    <ul class="space-y-4 text-slate-600 mb-8">
+                        <li class="flex items-center gap-3">
+                            <span class="text-emerald-600 font-bold">&#x2713;</span> Maksimal 3 Outlet
+                        </li>
+                        <li class="flex items-center gap-3">
+                            <span class="text-emerald-600 font-bold">&#x2713;</span> Cloud Sync (Supabase)
+                        </li>
+                        <li class="flex items-center gap-3">
+                            <span class="text-emerald-600 font-bold">&#x2713;</span> Multi-Gudang & Inventory Cloud
+                        </li>
+                        <li class="flex items-center gap-3">
+                            <span class="text-emerald-600 font-bold">&#x2713;</span> Dashboard Analitik Web
+                        </li>
                     </ul>
+                    <div class="bg-slate-100 p-4 rounded-xl text-xs text-slate-600">
+                        Dirancang untuk bisnis yang sedang tumbuh dan memiliki banyak cabang.
+                    </div>
                 </div>
             </div>
-        </section>
-
-    </main>
-
-    <footer class="bg-white border-t border-slate-200 py-10 mt-10">
-        <div class="max-w-7xl mx-auto px-4 text-center">
-            <div class="text-2xl font-black text-indigo-600 mb-2">&#x1F4BB; POS SaaS</div>
-            <p class="text-sm text-slate-500">Single Page Architecture PRD Interactive Dashboard.</p>
         </div>
+    </section>
+
+    <section id="stories" class="py-20 bg-slate-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl font-bold text-slate-900 mb-4">Detail User Stories per Role</h2>
+                <p class="text-slate-500 max-w-2xl mx-auto">Sistem menggunakan hierarki L1-L3 untuk memastikan operasional berjalan sesuai tanggung jawab.</p>
+            </div>
+
+            <div class="flex justify-center gap-4 mb-10 overflow-x-auto pb-4 hide-scrollbar">
+                <button onclick="showStories('owner')" id="btn-owner" class="role-btn px-6 py-3 rounded-2xl font-bold transition-all bg-indigo-600 text-white shadow-lg">L1: Owner</button>
+                <button onclick="showStories('supervisor')" id="btn-supervisor" class="role-btn px-6 py-3 rounded-2xl font-bold transition-all bg-white text-slate-600 border border-slate-200">L2: Supervisor</button>
+                <button onclick="showStories('kasir')" id="btn-kasir" class="role-btn px-6 py-3 rounded-2xl font-bold transition-all bg-white text-slate-600 border border-slate-200">L3: Kasir</button>
+            </div>
+
+            <div id="owner-stories" class="tab-content active grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                    <h4 class="font-bold text-indigo-600 mb-2">Aktivasi Lisensi</h4>
+                    <p class="text-sm text-slate-600">Sebagai Owner, saya ingin menginput kode lisensi dari email agar aplikasi aktif permanen di perangkat ini (Fingerprint).</p>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                    <h4 class="font-bold text-indigo-600 mb-2">Manajemen Karyawan</h4>
+                    <p class="text-sm text-slate-600">Sebagai Owner, saya ingin membuat akun kasir/supervisor dengan PIN 6 digit tanpa batasan jumlah pengguna.</p>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                    <h4 class="font-bold text-indigo-600 mb-2">Impor Produk Massal</h4>
+                    <p class="text-sm text-slate-600">Sebagai Owner, saya ingin mengimpor ratusan produk dari Excel agar tidak perlu input manual satu per satu.</p>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                    <h4 class="font-bold text-indigo-600 mb-2">Operasional Kasir</h4>
+                    <p class="text-sm text-slate-600">Sebagai Owner, saya ingin bisa melayani transaksi kasir jika personil sedang kurang (Hierarki tertinggi).</p>
+                </div>
+            </div>
+
+            <div id="supervisor-stories" class="tab-content grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                    <h4 class="font-bold text-emerald-600 mb-2">Stock Opname</h4>
+                    <p class="text-sm text-slate-600">Sebagai Supervisor, saya ingin menyesuaikan stok fisik dengan sistem agar data inventaris selalu akurat.</p>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                    <h4 class="font-bold text-emerald-600 mb-2">Otorisasi Void</h4>
+                    <p class="text-sm text-slate-600">Sebagai Supervisor, saya ingin memberikan PIN otorisasi saat kasir perlu menghapus transaksi (void) demi keamanan.</p>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                    <h4 class="font-bold text-emerald-600 mb-2">Manajemen Barang Masuk</h4>
+                    <p class="text-sm text-slate-600">Sebagai Supervisor, saya ingin mencatat penambahan stok dari suplier secara lokal.</p>
+                </div>
+            </div>
+
+            <div id="kasir-stories" class="tab-content grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                    <h4 class="font-bold text-slate-800 mb-2">Buka/Tutup Shift</h4>
+                    <p class="text-sm text-slate-600">Sebagai Kasir, saya ingin memasukkan modal awal dan mencetak laporan shift saat closing (Serah terima).</p>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                    <h4 class="font-bold text-slate-800 mb-2">Pencatatan Status Bayar</h4>
+                    <p class="text-sm text-slate-600">Sebagai Kasir, saya ingin memilih status (Tunai, QRIS, Debit) setelah pelanggan bayar via EDC eksternal.</p>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                    <h4 class="font-bold text-slate-800 mb-2">Cetak Struk Bluetooth</h4>
+                    <p class="text-sm text-slate-600">Sebagai Kasir, saya ingin mencetak struk ESC/POS segera setelah transaksi sukses sebagai bukti pelanggan.</p>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                    <h4 class="font-bold text-slate-800 mb-2">Laporan Shift Mandiri</h4>
+                    <p class="text-sm text-slate-600">Sebagai Kasir, saya ingin melihat ringkasan penjualan saya hari ini untuk memastikan uang di laci sesuai.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="architecture" class="py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl font-bold text-slate-900 mb-4">Simulasi Sinkronisasi Hybrid</h2>
+                <p class="text-slate-500 max-w-2xl mx-auto">Lihat bagaimana data tetap aman mengalir antar perangkat meski internet tidak stabil.</p>
+            </div>
+
+            <div class="bg-slate-900 rounded-[2.5rem] p-8 md:p-12 shadow-2xl relative overflow-hidden">
+                <div class="absolute inset-0 opacity-10" style="background-image: radial-gradient(#ffffff 1px, transparent 1px); background-size: 20px 20px;"></div>
+                
+                <div class="flex justify-center mb-10 relative z-10">
+                    <div class="bg-slate-800 p-1.5 rounded-2xl flex items-center gap-2 border border-slate-700">
+                        <button id="btn-offline" class="px-6 py-2 rounded-xl text-sm font-bold bg-amber-500 text-white shadow-lg transition-all">Mode Offline (Normal)</button>
+                        <button id="btn-online" class="px-6 py-2 rounded-xl text-sm font-bold text-slate-400 hover:text-white transition-all">Mode Online (Sync)</button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-12 items-center relative z-10">
+                    <div id="node-app" class="bg-white p-6 rounded-3xl border-4 border-amber-500 status-pulse-off text-center transition-all duration-500">
+                        <div class="text-4xl mb-3">&#x1F4F1;</div>
+                        <h4 class="font-extrabold text-slate-900 mb-1">POSify App</h4>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">SQLite Database</p>
+                        <div class="text-xs text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-100 text-left">
+                            <span id="app-status">Menyimpan transaksi lokal. Mencetak struk via Bluetooth ESC/POS.</span>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col items-center">
+                        <div id="sync-arrow" class="text-4xl text-slate-600 transition-all duration-500 rotate-90 md:rotate-0">&#x21E2;</div>
+                        <div class="mt-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest" id="sync-text">Push Antrean Tertahan</div>
+                    </div>
+
+                    <div id="node-cloud" class="bg-slate-800 p-6 rounded-3xl border-4 border-slate-700 opacity-40 text-center transition-all duration-500">
+                        <div class="text-4xl mb-3">&#x2601;</div>
+                        <h4 class="font-extrabold text-white mb-1">Cloud Backend</h4>
+                        <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-4">Go Fiber + Supabase</p>
+                        <div class="text-xs text-slate-400 bg-slate-900 p-3 rounded-xl border border-slate-700 text-left">
+                            <span id="cloud-status">Menunggu koneksi dari perangkat untuk validasi lisensi...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="full-doc" class="py-20 bg-slate-50">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="p-8 border-b border-slate-100 bg-slate-50/50">
+                    <h2 class="text-2xl font-bold text-slate-900">Dokumen PRD Lengkap (12 Poin)</h2>
+                    <p class="text-sm text-slate-500 mt-2">Konsolidasi seluruh kebutuhan teknis dan fungsional.</p>
+                </div>
+                <div class="p-8 space-y-8 max-h-[600px] overflow-y-auto custom-scroll">
+                    
+                    <div>
+                        <h3 class="font-bold text-indigo-600 mb-3 flex items-center gap-2"><span>01</span> Ringkasan Eksekutif</h3>
+                        <p class="text-sm text-slate-600 leading-relaxed">Sistem POS khusus UMKM dengan model Lifetime License (Lite) dan Subscription (Pro). Berjalan 100% offline menggunakan SQLite dengan aktivasi satu kali di awal via Backend Golang.</p>
+                    </div>
+
+                    <div>
+                        <h3 class="font-bold text-indigo-600 mb-3 flex items-center gap-2"><span>02</span> Target Pengguna</h3>
+                        <p class="text-sm text-slate-600 leading-relaxed">UMKM Ritel & F&B outlet tunggal yang ingin kepastian biaya, bisnis di area internet tidak stabil, dan pengusaha outlet tunggal dengan banyak karyawan.</p>
+                    </div>
+
+                    <div>
+                        <h3 class="font-bold text-indigo-600 mb-3 flex items-center gap-2"><span>03</span> Struktur Tier & Model Bisnis</h3>
+                        <p class="text-sm text-slate-600 leading-relaxed">Lite: Lifetime Pay, 1 Outlet, Offline Only. Pro: Subscription, Multi-outlet, Cloud Sync.</p>
+                    </div>
+
+                    <div>
+                        <h3 class="font-bold text-indigo-600 mb-3 flex items-center gap-2"><span>04</span> Fitur Utama (Fungsional)</h3>
+                        <ul class="text-sm text-slate-600 space-y-2 list-disc pl-5">
+                            <li>Aktivasi Lisensi 1x (Online).</li>
+                            <li>Hierarki Role (L1 Owner, L2 Supervisor, L3 Kasir).</li>
+                            <li>Manajemen Stok & Produk (Manual/Excel).</li>
+                            <li>Pencatatan Status Bayar (Tunai/QRIS/Debit).</li>
+                            <li>Print ESC/POS Engine.</li>
+                        </ul>
+                    </div>
+
+                    <div>
+                        <h3 class="font-bold text-indigo-600 mb-3 flex items-center gap-2"><span>05</span> Aturan Validasi Data</h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-xs text-left border-collapse">
+                                <thead class="bg-slate-50">
+                                    <tr>
+                                        <th class="p-2 border border-slate-200">Entitas</th>
+                                        <th class="p-2 border border-slate-200">Validasi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td class="p-2 border border-slate-200 font-bold">Produk</td><td class="p-2 border border-slate-200">Nama (3-100 char), SKU (Unique), Harga (>0)</td></tr>
+                                    <tr><td class="p-2 border border-slate-200 font-bold">User</td><td class="p-2 border border-slate-200">PIN (6 Digit Numeric), Nama (Max 50 char)</td></tr>
+                                    <tr><td class="p-2 border border-slate-200 font-bold">Nota</td><td class="p-2 border border-slate-200">Format: POS-[TGL]-[UNIK]</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 class="font-bold text-indigo-600 mb-3 flex items-center gap-2"><span>06</span> Spesifikasi Teknis & Stack</h3>
+                        <p class="text-sm text-slate-600 leading-relaxed">Backend: Go (Fiber). Database: SQLite (Local) & Supabase (License Master). Mobile: Flutter. Monitoring: Sentry.</p>
+                    </div>
+
+                    <div>
+                        <h3 class="font-bold text-indigo-600 mb-3 flex items-center gap-2"><span>07</span> User Stories (Detailed)</h3>
+                        <p class="text-sm text-slate-600 leading-relaxed">Tercakup dalam explorer interaktif di atas (Owner, Supervisor, Kasir).</p>
+                    </div>
+
+                    <div>
+                        <h3 class="font-bold text-indigo-600 mb-3 flex items-center gap-2"><span>08</span> Non-Functional Requirements (NFR)</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="p-4 bg-emerald-50 rounded-xl">
+                                <canvas id="kpiResponse"></canvas>
+                                <p class="text-[10px] text-center font-bold mt-2">Response &lt; 200ms</p>
+                            </div>
+                            <div class="p-4 bg-indigo-50 rounded-xl">
+                                <canvas id="kpiSync"></canvas>
+                                <p class="text-[10px] text-center font-bold mt-2">Sync 99.9% Accuracy</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 class="font-bold text-indigo-600 mb-3 flex items-center gap-2"><span>09</span> Batasan Ruang Lingkup (Out of Scope)</h3>
+                        <p class="text-sm text-slate-600 leading-relaxed">Tidak ada integrasi otomatis payment gateway, Grab/GoFood, atau sinkronisasi multi-device di Tier 1.</p>
+                    </div>
+
+                    <div>
+                        <h3 class="font-bold text-indigo-600 mb-3 flex items-center gap-2"><span>10</span> Spesifikasi Hardware Min.</h3>
+                        <p class="text-sm text-slate-600 leading-relaxed">Android 10+, RAM 3GB+, Storage 1GB+, Bluetooth Thermal Printer.</p>
+                    </div>
+
+                    <div>
+                        <h3 class="font-bold text-indigo-600 mb-3 flex items-center gap-2"><span>11</span> Asumsi & Ketergantungan</h3>
+                        <p class="text-sm text-slate-600 leading-relaxed">Pengguna memiliki EDC/QRIS sendiri, sistem hanya pencatatan. Backend Go stabil untuk aktivasi awal.</p>
+                    </div>
+
+                    <div>
+                        <h3 class="font-bold text-indigo-600 mb-3 flex items-center gap-2"><span>12</span> Kriteria Kesuksesan (KPI)</h3>
+                        <p class="text-sm text-slate-600 leading-relaxed">Nol data korup saat offline, checkout &lt; 2 detik, durasi onboarding &lt; 15 menit.</p>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="py-12 bg-white border-t border-slate-100 text-center">
+        <p class="text-sm text-slate-400">&copy; 2026 POSify SaaS Initiative. Dokumen PRD Final v1.2</p>
     </footer>
 
     <script>
-        function navTo(id) {
-            document.getElementById(id).scrollIntoView();
-        }
-
+        // Label Wrapping Logic
         function wrapLabel(label) {
             if (label.length <= 16) return label;
             const words = label.split(' ');
@@ -375,193 +439,111 @@
             return lines;
         }
 
-        const commonTooltipConfig = {
+        const commonTooltip = {
             callbacks: {
                 title: function(tooltipItems) {
                     const item = tooltipItems[0];
                     let label = item.chart.data.labels[item.dataIndex];
-                    if (Array.isArray(label)) return label.join(' ');
-                    return label;
+                    return Array.isArray(label) ? label.join(' ') : label;
                 }
             }
         };
 
-        const targetData = {
-            labels: ['F&B (Resto/Kafe)', 'Ritel (Toko)', 'Jasa (Salon dll)'],
-            datasets: [{
-                data: [50, 35, 15],
-                backgroundColor: ['#4F46E5', '#0EA5E9', '#94A3B8'],
-                borderWidth: 0,
-                hoverOffset: 4
-            }]
-        };
-
-        new Chart(document.getElementById('targetMarketChart'), {
+        // Charts Initialization
+        const ctxMarket = document.getElementById('marketChart').getContext('2d');
+        new Chart(ctxMarket, {
             type: 'doughnut',
             data: {
-                labels: targetData.labels.map(wrapLabel),
-                datasets: targetData.datasets
+                labels: ['F&B Kecil', 'Ritel Toko', 'Jasa / Lainnya'].map(wrapLabel),
+                datasets: [{
+                    data: [50, 35, 15],
+                    backgroundColor: ['#4F46E5', '#10B981', '#94A3B8'],
+                    borderWidth: 0
+                }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 cutout: '70%',
                 plugins: {
-                    legend: { position: 'bottom', labels: { font: { family: 'Inter' } } },
-                    tooltip: { plugins: { tooltip: commonTooltipConfig } }
+                    legend: { position: 'bottom', labels: { font: { family: 'Plus Jakarta Sans', size: 10 } } },
+                    tooltip: commonTooltip
                 }
             }
         });
 
-        const stories = {
-            owner: [
-                "<b>Pendaftaran Akun:</b> Mendaftarkan akun bisnis menggunakan email secara mandiri.",
-                "<b>Pemilihan Paket:</b> Memilih paket (Lite/Pro) sesuai budget dan kebutuhan.",
-                "<b>Import Produk:</b> Mengimpor daftar produk masal via Excel/CSV.",
-                "<b>Monitoring Real-time:</b> Melihat pendapatan dari semua cabang via HP.",
-                "<b>Laporan Laba/Rugi:</b> Mengunduh laporan performa finansial bulanan."
-            ],
-            kasir: [
-                "<b>Buka Shift (Offline):</b> Memasukkan saldo kas awal meski internet mati.",
-                "<b>Pencarian Produk:</b> Mencari item via nama atau scan barcode.",
-                "<b>Checkout Tunai:</b> Menghitung otomatis uang kembalian pelanggan.",
-                "<b>Cetak Struk:</b> Mencetak struk via Bluetooth thermal printer.",
-                "<b>Sinkronisasi Otomatis:</b> Transaksi offline otomatis terunggah saat online."
-            ],
-            supervisor: [
-                "<b>Otorisasi Void:</b> Memasukkan PIN untuk menyetujui pembatalan pesanan.",
-                "<b>Edit Stok:</b> Melakukan penyesuaian/opname stok fisik di aplikasi kasir."
-            ]
+        const gaugeOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            circumference: 180,
+            rotation: 270,
+            cutout: '80%',
+            plugins: { legend: { display: false }, tooltip: { enabled: false } }
         };
 
-        function populateStories() {
-            Object.keys(stories).forEach(role => {
-                const container = document.getElementById(`list-${role}`);
-                container.innerHTML = stories[role].map(s => 
-                    `<div class="flex items-start gap-3 bg-white p-4 rounded-xl border border-slate-100 shadow-sm"><span class="text-indigo-500 mt-1">&#x2713;</span><p class="text-sm text-slate-700">${s}</p></div>`
-                ).join('');
-            });
-        }
-        populateStories();
-
-        function showStory(role) {
-            document.querySelectorAll('.story-btn').forEach(btn => {
-                btn.className = 'story-btn w-full text-left p-4 rounded-xl font-semibold transition-all border-2 border-transparent hover:bg-slate-100 text-slate-600 flex items-center gap-3';
-            });
-            document.querySelectorAll('.content-tab').forEach(tab => tab.classList.remove('active'));
-            
-            const activeBtn = document.getElementById(`btn-${role}`);
-            activeBtn.className = 'story-btn w-full text-left p-4 rounded-xl font-bold transition-all border-2 border-indigo-500 bg-indigo-50 text-indigo-700 flex items-center gap-3';
-            document.getElementById(`story-${role}`).classList.add('active');
-        }
-
-        const radarCtx = document.getElementById('tierRadarChart');
-        const radarLabels = ['Batas Outlet', 'Manajemen Produk', 'Stok & Gudang', 'Laporan Analitik', 'CRM & Poin', 'Offline Mode'];
-        
-        const tierData = {
-            lite: { label: 'Lite', data: [10, 30, 0, 20, 0, 100], color: '#94A3B8', bg: 'rgba(148, 163, 184, 0.2)' },
-            pro: { label: 'Pro', data: [40, 60, 40, 70, 40, 100], color: '#4F46E5', bg: 'rgba(79, 70, 229, 0.2)' },
-            ent: { label: 'Enterprise', data: [100, 100, 100, 100, 100, 100], color: '#0EA5E9', bg: 'rgba(14, 165, 233, 0.2)' }
-        };
-
-        let radarChart = new Chart(radarCtx, {
-            type: 'radar',
-            data: {
-                labels: radarLabels.map(wrapLabel),
-                datasets: [
-                    { ...tierData.lite, borderColor: tierData.lite.color, backgroundColor: 'transparent', pointBackgroundColor: tierData.lite.color, borderWidth: 1 },
-                    { ...tierData.pro, borderColor: tierData.pro.color, backgroundColor: tierData.pro.bg, pointBackgroundColor: tierData.pro.color, borderWidth: 3 },
-                    { ...tierData.ent, borderColor: tierData.ent.color, backgroundColor: 'transparent', pointBackgroundColor: tierData.ent.color, borderWidth: 1 }
-                ]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                scales: { r: { angleLines: { color: 'rgba(0,0,0,0.05)' }, grid: { color: 'rgba(0,0,0,0.05)' }, pointLabels: { font: { family: 'Inter', size: 10 } }, ticks: { display: false, max: 100, min: 0 } } },
-                plugins: { legend: { position: 'bottom', labels: { font: { family: 'Inter', size: 10 } } }, tooltip: { plugins: { tooltip: commonTooltipConfig } } }
-            }
+        new Chart(document.getElementById('kpiResponse').getContext('2d'), {
+            type: 'doughnut',
+            data: { datasets: [{ data: [80, 20], backgroundColor: ['#10B981', '#E2E8F0'], borderWidth: 0 }] },
+            options: gaugeOptions
         });
 
-        function updateTier(tierKey) {
-            document.querySelectorAll('.tier-card').forEach(card => {
-                card.classList.remove('active', 'border-indigo-500', 'shadow-md');
-                card.classList.add('border-slate-200');
-            });
-            document.getElementById(`card-${tierKey}`).classList.remove('border-slate-200');
-            document.getElementById(`card-${tierKey}`).classList.add('active', 'border-indigo-500', 'shadow-md');
+        new Chart(document.getElementById('kpiSync').getContext('2d'), {
+            type: 'doughnut',
+            data: { datasets: [{ data: [99, 1], backgroundColor: ['#4F46E5', '#E2E8F0'], borderWidth: 0 }] },
+            options: gaugeOptions
+        });
 
-            const descMap = {
-                lite: "Paket Lite difokuskan murni pada keandalan offline dan pencatatan dasar untuk 1 outlet.",
-                pro: "Paket Pro menawarkan keseimbangan terbaik untuk laporan, manajemen varian, dan CRM dasar.",
-                ent: "Enterprise mengunci semua batasan, cocok untuk franchise dengan multi-gudang dan resep."
-            };
-            document.getElementById('tier-desc').innerText = descMap[tierKey];
-
-            const newDatasets = Object.keys(tierData).map(k => {
-                const isTarget = k === tierKey;
-                return {
-                    label: tierData[k].label,
-                    data: tierData[k].data,
-                    borderColor: isTarget ? tierData[k].color : 'rgba(203,213,225,0.5)',
-                    backgroundColor: isTarget ? tierData[k].bg : 'transparent',
-                    pointBackgroundColor: isTarget ? tierData[k].color : 'rgba(203,213,225,0.5)',
-                    borderWidth: isTarget ? 3 : 1,
-                    order: isTarget ? 1 : 2
-                };
+        // Tab Navigation
+        function showStories(role) {
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('.role-btn').forEach(b => {
+                b.classList.remove('bg-indigo-600', 'text-white', 'shadow-lg');
+                b.classList.add('bg-white', 'text-slate-600', 'border-slate-200');
             });
-            radarChart.data.datasets = newDatasets;
-            radarChart.update();
+
+            document.getElementById(role + '-stories').classList.add('active');
+            const btn = document.getElementById('btn-' + role);
+            btn.classList.add('bg-indigo-600', 'text-white', 'shadow-lg');
+            btn.classList.remove('bg-white', 'text-slate-600', 'border-slate-200');
         }
 
-        const btnOn = document.getElementById('btn-online');
-        const btnOff = document.getElementById('btn-offline');
-        const nodeKasir = document.getElementById('node-kasir');
+        // Sync Simulation
+        const btnOffline = document.getElementById('btn-offline');
+        const btnOnline = document.getElementById('btn-online');
+        const nodeApp = document.getElementById('node-app');
         const nodeCloud = document.getElementById('node-cloud');
-        const iconSync = document.getElementById('icon-sync');
-        const txtKasir = document.getElementById('text-kasir');
-        const txtSync = document.getElementById('text-sync');
-        const txtCloud = document.getElementById('text-cloud');
+        const syncArrow = document.getElementById('sync-arrow');
+        const syncText = document.getElementById('sync-text');
+        const appStatus = document.getElementById('app-status');
+        const cloudStatus = document.getElementById('cloud-status');
 
-        btnOff.addEventListener('click', () => {
-            btnOff.className = 'px-6 py-2.5 rounded-lg text-sm font-bold bg-amber-500 text-white shadow transition-all';
-            btnOn.className = 'px-6 py-2.5 rounded-lg text-sm font-bold text-slate-400 hover:text-white transition-all';
-            
-            nodeKasir.classList.replace('border-emerald-500', 'border-amber-500');
-            nodeKasir.classList.replace('pulse-online', 'pulse-offline');
-            nodeCloud.classList.replace('border-emerald-500', 'border-slate-700');
-            nodeCloud.classList.add('opacity-40');
-            
-            iconSync.innerHTML = '&#x21E2;';
-            iconSync.classList.replace('text-emerald-400', 'text-amber-500');
-            iconSync.classList.add('animate-pulse');
-
-            txtKasir.innerHTML = '<b class="text-amber-600">OFFLINE.</b> Kasir beroperasi normal. Checkout diantrekan di SQLite.';
-            txtSync.innerHTML = '<span class="text-amber-400">Putus.</span> Menunggu koneksi pulih untuk push antrean.';
-            txtCloud.innerHTML = 'Menunggu klien. Data tertahan di SQLite lokal.';
-        });
-
-        btnOn.addEventListener('click', () => {
-            btnOn.className = 'px-6 py-2.5 rounded-lg text-sm font-bold bg-emerald-500 text-white shadow transition-all';
-            btnOff.className = 'px-6 py-2.5 rounded-lg text-sm font-bold text-slate-400 hover:text-white transition-all';
-            
-            nodeKasir.classList.replace('border-amber-500', 'border-emerald-500');
-            nodeKasir.classList.replace('pulse-offline', 'pulse-online');
+        btnOnline.addEventListener('click', () => {
+            btnOnline.className = 'px-6 py-2 rounded-xl text-sm font-bold bg-indigo-600 text-white shadow-lg transition-all';
+            btnOffline.className = 'px-6 py-2 rounded-xl text-sm font-bold text-slate-400 hover:text-white transition-all';
+            nodeApp.classList.replace('border-amber-500', 'border-indigo-600');
+            nodeApp.classList.replace('status-pulse-off', 'status-pulse-on');
+            nodeCloud.classList.replace('opacity-40', 'opacity-100');
             nodeCloud.classList.replace('border-slate-700', 'border-emerald-500');
-            nodeCloud.classList.remove('opacity-40');
-            
-            iconSync.innerHTML = '&#x21C4;';
-            iconSync.classList.replace('text-amber-500', 'text-emerald-400');
-            iconSync.classList.remove('animate-pulse');
-
-            txtKasir.innerHTML = 'Mencatat checkout secara real-time. Sinkronisasi instan ke Cloud.';
-            txtSync.innerHTML = 'Aliran data dua arah aktif (Push & Pull).';
-            txtCloud.innerHTML = 'Memproses checkout, memotong stok terpusat untuk cegah overselling.';
+            syncArrow.innerHTML = '&#x21C4;';
+            syncArrow.classList.replace('text-slate-600', 'text-indigo-400');
+            syncText.innerHTML = 'Sinkronisasi Aktif';
+            appStatus.innerHTML = 'Mengirim data transaksi tertunda... Menerima update katalog cloud.';
+            cloudStatus.innerHTML = 'Memvalidasi Lisensi & Menyesuaikan Inventory Terpusat.';
         });
 
-        const gaugeBase = { responsive: true, maintainAspectRatio: false, circumference: 180, rotation: -90, cutout: '75%', plugins: { legend: { display: false }, tooltip: { enabled: false } } };
-        
-        new Chart(document.getElementById('kpiResponse'), { type: 'doughnut', data: { datasets: [{ data: [150, 50], backgroundColor: ['#10B981', '#F1F5F9'], borderWidth: 0 }] }, options: gaugeBase });
-        new Chart(document.getElementById('kpiRps'), { type: 'doughnut', data: { datasets: [{ data: [5000, 1000], backgroundColor: ['#4F46E5', '#F1F5F9'], borderWidth: 0 }] }, options: gaugeBase });
-        new Chart(document.getElementById('kpiSync'), { type: 'doughnut', data: { datasets: [{ data: [99.9, 0.1], backgroundColor: ['#3B82F6', '#F1F5F9'], borderWidth: 0 }] }, options: gaugeBase });
+        btnOffline.addEventListener('click', () => {
+            btnOffline.className = 'px-6 py-2 rounded-xl text-sm font-bold bg-amber-500 text-white shadow-lg transition-all';
+            btnOnline.className = 'px-6 py-2 rounded-xl text-sm font-bold text-slate-400 hover:text-white transition-all';
+            nodeApp.classList.replace('border-indigo-600', 'border-amber-500');
+            nodeApp.classList.replace('status-pulse-on', 'status-pulse-off');
+            nodeCloud.classList.add('opacity-40');
+            nodeCloud.classList.replace('border-emerald-500', 'border-slate-700');
+            syncArrow.innerHTML = '&#x21E2;';
+            syncArrow.classList.replace('text-indigo-400', 'text-slate-600');
+            syncText.innerHTML = 'Push Antrean Tertahan';
+            appStatus.innerHTML = 'Menyimpan transaksi lokal. Mencetak struk via Bluetooth ESC/POS.';
+            cloudStatus.innerHTML = 'Menunggu koneksi dari perangkat untuk validasi lisensi...';
+        });
     </script>
 </body>
 </html>
