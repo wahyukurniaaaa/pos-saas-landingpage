@@ -3,547 +3,657 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>POSify SaaS - Interactive PRD Dashboard</title>
+    <title>POSify v1.9 - Interactive PRD</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- CSS Framework -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Charting Library -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Chosen Palette: Warm neutral slate background (bg-slate-50), Deep Blue (#1A227F) as primary, Emerald (#059669) for positive/Lite aspects, Amber (#D97706) for warnings/Pro aspects. -->
+    
+    <!-- Application Structure Plan: The SPA is divided into 4 logical, task-oriented views: 1. Strategy & Overview (sets the business context), 2. Roles & Architecture (interactive radar chart for cumulative permissions and tech stack overview), 3. Operational Simulator (interactive step-by-step flow viewer for 7 key PRD processes), 4. Data Dictionary (filterable table for validation rules). This structure transforms a linear text document into an exploratory dashboard, allowing stakeholders to easily find relevant context (e.g., developers go to Data, QA goes to Flows, Management goes to Strategy). -->
+    
+    <!-- Visualization & Content Choices: 
+        1. Role Hierarchy -> Goal: Compare -> Viz: Radar Chart (Chart.js) -> Interaction: Clickable role buttons update the chart and text -> Justification: Radar charts perfectly illustrate the "cumulative" nature of roles (Owner covers the whole area, Cashier covers a specific slice).
+        2. Tech Stack -> Goal: Inform -> Viz: Doughnut Chart (Chart.js) -> Interaction: Hover tooltips -> Justification: Shows the distribution of tech responsibilities.
+        3. User Flows -> Goal: Change/Process -> Viz: CSS/HTML Interactive Stepper -> Interaction: Prev/Next buttons step through the flow -> Justification: Avoids SVG/Mermaid while providing a clear, interactive visualization of complex processes like AES-256 backup and Device Migration.
+        4. Data Rules -> Goal: Organize -> Viz: HTML Table -> Interaction: Live Search -> Justification: Best for quickly finding specific database constraints.
+        * Note: ALL visual icons use standard Unicode emojis to strictly comply with the NO SVG requirement. -->
+    
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
     <style>
         body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: #FDFDFD;
-            color: #1A1A1A;
-            scroll-behavior: smooth;
+            font-family: 'Inter', sans-serif;
+            background-color: #F8FAFC; /* Light slate background */
+            color: #0F172A;
+            -webkit-tap-highlight-color: transparent;
         }
+
+        /* Mandatory Chart Container Constraints */
         .chart-container {
             position: relative;
             width: 100%;
-            max-width: 600px;
+            max-width: 500px;
             margin-left: auto;
             margin-right: auto;
-            height: 300px;
-            max-height: 350px;
+            height: 320px;
+            max-height: 400px;
         }
-        .glass-nav {
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(12px);
-            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 380px;
+            }
         }
-        .card-interactive {
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .card-interactive:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.1);
-        }
-        .status-pulse-on {
-            animation: pulse-green 2s infinite;
-        }
-        .status-pulse-off {
-            animation: pulse-amber 2s infinite;
-        }
-        @keyframes pulse-green {
-            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
-            70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
-        }
-        @keyframes pulse-amber {
-            0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
-            70% { box-shadow: 0 0 0 10px rgba(245, 158, 11, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
-        }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; animation: fadeIn 0.4s ease; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* Custom Scrollbar */
+        .custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: #F1F5F9; border-radius: 4px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 4px; }
+
+        /* Tab Navigation */
+        .tab-btn { transition: all 0.2s ease; border-bottom: 2px solid transparent; }
+        .tab-btn.active { border-bottom-color: #1A227F; color: #1A227F; font-weight: 700; }
+        
+        /* View Transitions */
+        .view-section { display: none; animation: fadeIn 0.4s ease-out; }
+        .view-section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Flow Stepper CSS (No SVG) */
+        .flow-node { transition: all 0.3s ease; }
+        .flow-node.active { background-color: #EEF2FF; border-color: #1A227F; transform: scale(1.05); box-shadow: 0 4px 6px -1px rgba(26,34,127,0.1); }
+        .flow-node.completed { background-color: #F1F5F9; border-color: #10B981; opacity: 0.8; }
+        .flow-node.pending { background-color: #FFFFFF; border-color: #E2E8F0; opacity: 0.5; filter: grayscale(100%); }
+        
+        .flow-line { transition: all 0.3s ease; }
+        .flow-line.active { background-color: #1A227F; }
+        .flow-line.completed { background-color: #10B981; }
+        .flow-line.pending { background-color: #E2E8F0; }
     </style>
 </head>
-<body class="antialiased">
+<body class="min-h-screen flex flex-col">
 
-    <!-- Chosen Palette: Indigo & Emerald Vibrant -->
-    <!-- Application Structure Plan:
-        1. Executive Hero: Highlighting the Lifetime License USP.
-        2. Functional Grid: Presenting sections 1-6 through a dashboard layout.
-        3. User Story Explorer: Interactive tabs for roles (Section 7).
-        4. Architecture & Sync Simulation: Visualizing the offline-first logic.
-        5. Deep Dive Document: Searchable/Collapsible list of all 12 points for reference.
-    -->
-    <!-- Visualization & Content Choices:
-        - Market Segment -> Donut Chart (Chart.js)
-        - Performance Metrics -> Gauge Charts (Chart.js)
-        - Data Validation -> Structured Table
-        - Roadmap -> Visual Timeline
-        - Confirming NO SVG or Mermaid JS used.
-    -->
-    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
-
-    <nav class="fixed top-0 w-full z-50 glass-nav">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-16">
+    <!-- Navigation Header -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6">
+            <div class="flex flex-col md:flex-row justify-between items-center py-4 gap-4">
                 <div class="flex items-center gap-3">
-                    <div class="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-black text-xl tracking-tighter shadow-indigo-200 shadow-lg">P</div>
-                    <span class="font-bold text-lg tracking-tight text-slate-800">POSify SaaS <span class="text-indigo-600">PRD</span></span>
-                </div>
-                <div class="hidden md:flex space-x-8 items-center">
-                    <a href="#overview" class="text-sm font-semibold text-slate-600 hover:text-indigo-600 transition-colors">Overview</a>
-                    <a href="#tiers" class="text-sm font-semibold text-slate-600 hover:text-indigo-600 transition-colors">Tiers</a>
-                    <a href="#stories" class="text-sm font-semibold text-slate-600 hover:text-indigo-600 transition-colors">User Stories</a>
-                    <a href="#architecture" class="text-sm font-semibold text-slate-600 hover:text-indigo-600 transition-colors">Sync Flow</a>
-                    <a href="#full-doc" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all">Baca Dokumen</a>
-                </div>
-            </div>
-        </div>
-    </nav>
-
-    <header id="overview" class="pt-32 pb-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-indigo-50/50 to-transparent">
-        <div class="max-w-7xl mx-auto">
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-                <div>
-                    <div class="inline-flex items-center gap-2 bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-xs font-bold mb-6 tracking-wide uppercase">
-                        <span>&#x1F4A1;</span> MVP Strategi: Lifetime License
-                    </div>
-                    <h1 class="text-4xl md:text-6xl font-extrabold text-slate-900 leading-[1.15] mb-6">
-                        Solusi POS <br/><span class="text-indigo-600">Offline-First</span> Tanpa Beban Langganan.
-                    </h1>
-                    <p class="text-lg text-slate-600 mb-8 leading-relaxed max-w-xl">
-                        Membantu UMKM Ritel & F&B berkembang dengan sistem kasir mandiri. 100% fungsional tanpa internet, bayar sekali pakai selamanya (Tier 1), dan hierarki peran yang fleksibel.
-                    </p>
-                    <div class="flex flex-wrap gap-4">
-                        <div class="flex items-center gap-3 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
-                            <span class="text-2xl">&#x1F4BE;</span>
-                            <div>
-                                <h4 class="font-bold text-sm">SQLite Local</h4>
-                                <p class="text-xs text-slate-500">Data aman di perangkat.</p>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-3 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
-                            <span class="text-2xl">&#x1F512;</span>
-                            <div>
-                                <h4 class="font-bold text-sm">Validasi Lisensi</h4>
-                                <p class="text-xs text-slate-500">Fingerprint Perangkat.</p>
-                            </div>
-                        </div>
+                    <div class="bg-[#1A227F] text-white w-10 h-10 rounded-xl flex items-center justify-center font-black text-xl shadow-md">P</div>
+                    <div>
+                        <h1 class="text-xl font-bold leading-tight text-slate-900">POSify <span class="text-[#1A227F]">PRD Viewer</span></h1>
+                        <p class="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Version 1.9 (Final MVP)</p>
                     </div>
                 </div>
-                <div class="relative">
-                    <div class="bg-white rounded-[2.5rem] p-8 shadow-2xl border border-slate-100 relative z-10">
-                        <h3 class="font-bold text-slate-800 text-center mb-6">Analisis Target Pasar UMKM</h3>
-                        <div class="chart-container">
-                            <canvas id="marketChart"></canvas>
-                        </div>
-                        <p class="mt-6 text-xs text-slate-500 text-center italic">Prioritas utama pada UMKM F&B dan Ritel dengan frekuensi transaksi tinggi.</p>
-                    </div>
-                    <div class="absolute -top-10 -right-10 w-40 h-40 bg-indigo-200 rounded-full blur-3xl opacity-30"></div>
-                    <div class="absolute -bottom-10 -left-10 w-40 h-40 bg-emerald-200 rounded-full blur-3xl opacity-30"></div>
-                </div>
+                
+                <nav class="flex gap-2 overflow-x-auto w-full md:w-auto custom-scroll pb-1 md:pb-0" id="main-nav">
+                    <button class="tab-btn active px-3 py-2 text-sm font-semibold text-slate-600 whitespace-nowrap" onclick="switchView('overview')">🚀 Strategi & Overview</button>
+                    <button class="tab-btn px-3 py-2 text-sm font-semibold text-slate-600 whitespace-nowrap" onclick="switchView('roles')">👥 Peran & Arsitektur</button>
+                    <button class="tab-btn px-3 py-2 text-sm font-semibold text-slate-600 whitespace-nowrap" onclick="switchView('flows')">🔄 Simulasi Alur</button>
+                    <button class="tab-btn px-3 py-2 text-sm font-semibold text-slate-600 whitespace-nowrap" onclick="switchView('data')">🗄️ Kamus Data</button>
+                </nav>
             </div>
         </div>
     </header>
 
-    <section id="tiers" class="py-20 bg-white">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center mb-16">
-                <h2 class="text-3xl font-bold text-slate-900 mb-4">Struktur Bisnis & Tier Produk</h2>
-                <p class="text-slate-500 max-w-2xl mx-auto">Kami menawarkan fleksibilitas penuh antara kepemilikan data lokal dan kemudahan sinkronisasi cloud.</p>
-            </div>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div class="bg-slate-50 rounded-3xl p-8 border-2 border-indigo-600 relative overflow-hidden card-interactive">
-                    <div class="absolute top-0 right-0 bg-indigo-600 text-white px-6 py-2 font-bold text-xs rounded-bl-2xl">LIFETIME</div>
-                    <h3 class="text-2xl font-bold mb-2">Tier 1: Lite</h3>
-                    <p class="text-indigo-600 font-bold mb-6">Sekali Bayar (Seumur Hidup)</p>
-                    <ul class="space-y-4 text-slate-600 mb-8">
-                        <li class="flex items-center gap-3">
-                            <span class="text-indigo-600 font-bold">&#x2713;</span> 1 Outlet (Locked Device)
-                        </li>
-                        <li class="flex items-center gap-3">
-                            <span class="text-indigo-600 font-bold">&#x2713;</span> Unlimited Local Employees
-                        </li>
-                        <li class="flex items-center gap-3">
-                            <span class="text-indigo-600 font-bold">&#x2713;</span> Full Offline SQLite Database
-                        </li>
-                        <li class="flex items-center gap-3">
-                            <span class="text-indigo-600 font-bold">&#x2713;</span> Manual Import/Export Excel
-                        </li>
-                    </ul>
-                    <div class="bg-indigo-100/50 p-4 rounded-xl text-xs text-indigo-800">
-                        Cocok untuk warung tunggal yang ingin hemat biaya tanpa langganan.
-                    </div>
-                </div>
+    <!-- Main Content Area -->
+    <main class="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 py-8">
 
-                <div class="bg-white rounded-3xl p-8 border border-slate-200 card-interactive">
-                    <h3 class="text-2xl font-bold mb-2">Tier 2: Pro</h3>
-                    <p class="text-emerald-600 font-bold mb-6">Berlangganan (SaaS)</p>
-                    <ul class="space-y-4 text-slate-600 mb-8">
-                        <li class="flex items-center gap-3">
-                            <span class="text-emerald-600 font-bold">&#x2713;</span> Maksimal 3 Outlet
-                        </li>
-                        <li class="flex items-center gap-3">
-                            <span class="text-emerald-600 font-bold">&#x2713;</span> Cloud Sync (Supabase)
-                        </li>
-                        <li class="flex items-center gap-3">
-                            <span class="text-emerald-600 font-bold">&#x2713;</span> Multi-Gudang & Inventory Cloud
-                        </li>
-                        <li class="flex items-center gap-3">
-                            <span class="text-emerald-600 font-bold">&#x2713;</span> Dashboard Analitik Web
-                        </li>
-                    </ul>
-                    <div class="bg-slate-100 p-4 rounded-xl text-xs text-slate-600">
-                        Dirancang untuk bisnis yang sedang tumbuh dan memiliki banyak cabang.
+        <!-- VIEW 1: STRATEGY & OVERVIEW -->
+        <section id="view-overview" class="view-section active">
+            <div class="mb-10">
+                <h2 class="text-3xl font-extrabold text-slate-800 mb-3">Ringkasan Eksekutif & Strategi</h2>
+                <p class="text-slate-600 leading-relaxed max-w-4xl text-lg">
+                    Aplikasi POSify dirancang khusus untuk UMKM dengan pendekatan <strong>Offline-First</strong>. Fokus utama rilis v1.9 ini adalah menonjolkan model bisnis sekali bayar (Tier 1) yang diiringi dengan peningkatan keamanan via <i>AES-256 Encryption</i> dan verifikasi <i>Heartbeat</i>.
+                </p>
+            </div>
+
+            <!-- Target Audience -->
+            <div class="mb-12">
+                <h3 class="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">🎯 Target Pengguna Utama</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                        <div class="text-4xl mb-4">🏪</div>
+                        <h4 class="font-bold text-slate-800 mb-2">UMKM Ritel & F&B Kecil</h4>
+                        <p class="text-sm text-slate-600">Pengusaha yang menginginkan kepastian biaya operasional tanpa beban biaya langganan bulanan SaaS konvensional.</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                        <div class="text-4xl mb-4">📶</div>
+                        <h4 class="font-bold text-slate-800 mb-2">Area Internet Tidak Stabil</h4>
+                        <p class="text-sm text-slate-600">Membutuhkan kecepatan operasional (< 1 detik) tanpa bergantung pada latensi cloud atau koneksi jaringan.</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                        <div class="text-4xl mb-4">👥</div>
+                        <h4 class="font-bold text-slate-800 mb-2">Manajemen Karyawan Masif</h4>
+                        <p class="text-sm text-slate-600">Outlet tunggal dengan banyak staf (Kasir, SPV) yang butuh pembagian peran tanpa biaya tambahan per lisensi pengguna.</p>
                     </div>
                 </div>
             </div>
-        </div>
-    </section>
 
-    <section id="stories" class="py-20 bg-slate-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center mb-16">
-                <h2 class="text-3xl font-bold text-slate-900 mb-4">Detail User Stories per Role</h2>
-                <p class="text-slate-500 max-w-2xl mx-auto">Sistem menggunakan hierarki L1-L3 untuk memastikan operasional berjalan sesuai tanggung jawab.</p>
-            </div>
-
-            <div class="flex justify-center gap-4 mb-10 overflow-x-auto pb-4 hide-scrollbar">
-                <button onclick="showStories('owner')" id="btn-owner" class="role-btn px-6 py-3 rounded-2xl font-bold transition-all bg-indigo-600 text-white shadow-lg">L1: Owner</button>
-                <button onclick="showStories('supervisor')" id="btn-supervisor" class="role-btn px-6 py-3 rounded-2xl font-bold transition-all bg-white text-slate-600 border border-slate-200">L2: Supervisor</button>
-                <button onclick="showStories('kasir')" id="btn-kasir" class="role-btn px-6 py-3 rounded-2xl font-bold transition-all bg-white text-slate-600 border border-slate-200">L3: Kasir</button>
-            </div>
-
-            <div id="owner-stories" class="tab-content active grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                    <h4 class="font-bold text-indigo-600 mb-2">Aktivasi Lisensi</h4>
-                    <p class="text-sm text-slate-600">Sebagai Owner, saya ingin menginput kode lisensi dari email agar aplikasi aktif permanen di perangkat ini (Fingerprint).</p>
-                </div>
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                    <h4 class="font-bold text-indigo-600 mb-2">Manajemen Karyawan</h4>
-                    <p class="text-sm text-slate-600">Sebagai Owner, saya ingin membuat akun kasir/supervisor dengan PIN 6 digit tanpa batasan jumlah pengguna.</p>
-                </div>
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                    <h4 class="font-bold text-indigo-600 mb-2">Impor Produk Massal</h4>
-                    <p class="text-sm text-slate-600">Sebagai Owner, saya ingin mengimpor ratusan produk dari Excel agar tidak perlu input manual satu per satu.</p>
-                </div>
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                    <h4 class="font-bold text-indigo-600 mb-2">Operasional Kasir</h4>
-                    <p class="text-sm text-slate-600">Sebagai Owner, saya ingin bisa melayani transaksi kasir jika personil sedang kurang (Hierarki tertinggi).</p>
-                </div>
-            </div>
-
-            <div id="supervisor-stories" class="tab-content grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                    <h4 class="font-bold text-emerald-600 mb-2">Stock Opname</h4>
-                    <p class="text-sm text-slate-600">Sebagai Supervisor, saya ingin menyesuaikan stok fisik dengan sistem agar data inventaris selalu akurat.</p>
-                </div>
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                    <h4 class="font-bold text-emerald-600 mb-2">Otorisasi Void</h4>
-                    <p class="text-sm text-slate-600">Sebagai Supervisor, saya ingin memberikan PIN otorisasi saat kasir perlu menghapus transaksi (void) demi keamanan.</p>
-                </div>
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                    <h4 class="font-bold text-emerald-600 mb-2">Manajemen Barang Masuk</h4>
-                    <p class="text-sm text-slate-600">Sebagai Supervisor, saya ingin mencatat penambahan stok dari suplier secara lokal.</p>
-                </div>
-            </div>
-
-            <div id="kasir-stories" class="tab-content grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                    <h4 class="font-bold text-slate-800 mb-2">Buka/Tutup Shift</h4>
-                    <p class="text-sm text-slate-600">Sebagai Kasir, saya ingin memasukkan modal awal dan mencetak laporan shift saat closing (Serah terima).</p>
-                </div>
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                    <h4 class="font-bold text-slate-800 mb-2">Pencatatan Status Bayar</h4>
-                    <p class="text-sm text-slate-600">Sebagai Kasir, saya ingin memilih status (Tunai, QRIS, Debit) setelah pelanggan bayar via EDC eksternal.</p>
-                </div>
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                    <h4 class="font-bold text-slate-800 mb-2">Cetak Struk Bluetooth</h4>
-                    <p class="text-sm text-slate-600">Sebagai Kasir, saya ingin mencetak struk ESC/POS segera setelah transaksi sukses sebagai bukti pelanggan.</p>
-                </div>
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                    <h4 class="font-bold text-slate-800 mb-2">Laporan Shift Mandiri</h4>
-                    <p class="text-sm text-slate-600">Sebagai Kasir, saya ingin melihat ringkasan penjualan saya hari ini untuk memastikan uang di laci sesuai.</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <section id="architecture" class="py-20 bg-white">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center mb-16">
-                <h2 class="text-3xl font-bold text-slate-900 mb-4">Simulasi Sinkronisasi Hybrid</h2>
-                <p class="text-slate-500 max-w-2xl mx-auto">Lihat bagaimana data tetap aman mengalir antar perangkat meski internet tidak stabil.</p>
-            </div>
-
-            <div class="bg-slate-900 rounded-[2.5rem] p-8 md:p-12 shadow-2xl relative overflow-hidden">
-                <div class="absolute inset-0 opacity-10" style="background-image: radial-gradient(#ffffff 1px, transparent 1px); background-size: 20px 20px;"></div>
-                
-                <div class="flex justify-center mb-10 relative z-10">
-                    <div class="bg-slate-800 p-1.5 rounded-2xl flex items-center gap-2 border border-slate-700">
-                        <button id="btn-offline" class="px-6 py-2 rounded-xl text-sm font-bold bg-amber-500 text-white shadow-lg transition-all">Mode Offline (Normal)</button>
-                        <button id="btn-online" class="px-6 py-2 rounded-xl text-sm font-bold text-slate-400 hover:text-white transition-all">Mode Online (Sync)</button>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-12 items-center relative z-10">
-                    <div id="node-app" class="bg-white p-6 rounded-3xl border-4 border-amber-500 status-pulse-off text-center transition-all duration-500">
-                        <div class="text-4xl mb-3">&#x1F4F1;</div>
-                        <h4 class="font-extrabold text-slate-900 mb-1">POSify App</h4>
-                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">SQLite Database</p>
-                        <div class="text-xs text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-100 text-left">
-                            <span id="app-status">Menyimpan transaksi lokal. Mencetak struk via Bluetooth ESC/POS.</span>
+            <!-- Tiering Comparison -->
+            <div>
+                <h3 class="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">⚖️ Perbandingan Arsitektur Tier</h3>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Tier 1 -->
+                    <div class="bg-white border-2 border-[#1A227F] rounded-3xl overflow-hidden shadow-lg">
+                        <div class="bg-[#1A227F] p-6 text-white text-center relative">
+                            <span class="absolute top-4 right-4 bg-emerald-400 text-emerald-900 text-[10px] font-black px-2 py-1 rounded uppercase tracking-wider">Fokus MVP (v1.9)</span>
+                            <h4 class="text-2xl font-black mb-1">Tier 1: Lite</h4>
+                            <p class="text-blue-200 font-medium">Sekali Bayar (Lifetime License)</p>
+                        </div>
+                        <div class="p-6">
+                            <ul class="space-y-4 text-sm font-medium text-slate-700">
+                                <li class="flex items-start gap-3"><span>✔️</span> <span><strong>1 Outlet Terkunci:</strong> Lisensi terikat pada Device Fingerprint.</span></li>
+                                <li class="flex items-start gap-3"><span>✔️</span> <span><strong>Karyawan Tak Terbatas:</strong> Akun dikelola penuh via database lokal.</span></li>
+                                <li class="flex items-start gap-3"><span>✔️</span> <span><strong>Offline Murni:</strong> Hanya butuh internet 1x per 7 hari (Heartbeat).</span></li>
+                                <li class="flex items-start gap-3"><span>✔️</span> <span><strong>Penyimpanan:</strong> SQLite lokal dengan Drift ORM (Type-Safe).</span></li>
+                                <li class="flex items-start gap-3"><span>✔️</span> <span><strong>Keamanan:</strong> Auto-Backup dengan Enkripsi AES-256.</span></li>
+                            </ul>
                         </div>
                     </div>
-
-                    <div class="flex flex-col items-center">
-                        <div id="sync-arrow" class="text-4xl text-slate-600 transition-all duration-500 rotate-90 md:rotate-0">&#x21E2;</div>
-                        <div class="mt-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest" id="sync-text">Push Antrean Tertahan</div>
-                    </div>
-
-                    <div id="node-cloud" class="bg-slate-800 p-6 rounded-3xl border-4 border-slate-700 opacity-40 text-center transition-all duration-500">
-                        <div class="text-4xl mb-3">&#x2601;</div>
-                        <h4 class="font-extrabold text-white mb-1">Cloud Backend</h4>
-                        <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-4">Go Fiber + Supabase</p>
-                        <div class="text-xs text-slate-400 bg-slate-900 p-3 rounded-xl border border-slate-700 text-left">
-                            <span id="cloud-status">Menunggu koneksi dari perangkat untuk validasi lisensi...</span>
+                    <!-- Tier 2 -->
+                    <div class="bg-slate-50 border border-slate-200 rounded-3xl overflow-hidden shadow-sm opacity-90 hover:opacity-100 transition-opacity">
+                        <div class="bg-slate-200 p-6 text-slate-800 text-center relative">
+                            <span class="absolute top-4 right-4 bg-slate-300 text-slate-600 text-[10px] font-black px-2 py-1 rounded uppercase tracking-wider">Roadmap Fase 4</span>
+                            <h4 class="text-2xl font-black mb-1">Tier 2: Pro</h4>
+                            <p class="text-slate-600 font-medium">Langganan (Subscription)</p>
+                        </div>
+                        <div class="p-6">
+                            <ul class="space-y-4 text-sm font-medium text-slate-600">
+                                <li class="flex items-start gap-3"><span>🚀</span> <span><strong>Multi-Outlet:</strong> Ekspansi hingga 3 outlet terhubung.</span></li>
+                                <li class="flex items-start gap-3"><span>🚀</span> <span><strong>Cloud Sync:</strong> Sinkronisasi antar perangkat via PowerSync.</span></li>
+                                <li class="flex items-start gap-3"><span>🚀</span> <span><strong>Multi-Gudang:</strong> Manajemen inventaris terpusat.</span></li>
+                                <li class="flex items-start gap-3"><span>🚀</span> <span><strong>Penyimpanan Hybrid:</strong> SQLite lokal + Supabase Master.</span></li>
+                                <li class="flex items-start gap-3"><span>🚀</span> <span><strong>Otomasi:</strong> Cloud backup otomatis & Dashboard Web.</span></li>
+                            </ul>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <section id="full-doc" class="py-20 bg-slate-50">
-        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-                <div class="p-8 border-b border-slate-100 bg-slate-50/50">
-                    <h2 class="text-2xl font-bold text-slate-900">Dokumen PRD Lengkap (12 Poin)</h2>
-                    <p class="text-sm text-slate-500 mt-2">Konsolidasi seluruh kebutuhan teknis dan fungsional.</p>
+        <!-- VIEW 2: ROLES & ARCHITECTURE -->
+        <section id="view-roles" class="view-section">
+            <div class="mb-10">
+                <h2 class="text-3xl font-extrabold text-slate-800 mb-3">Hierarki Peran & Arsitektur Teknis</h2>
+                <p class="text-slate-600 leading-relaxed max-w-4xl text-lg">
+                    Sistem POSify menggunakan <strong>Otorisasi Kumulatif</strong>. Artinya, level yang lebih tinggi mewarisi semua kemampuan level di bawahnya. Klik pada profil di bawah ini untuk melihat distribusi kapasitas operasionalnya.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-12">
+                <!-- Role Selectors -->
+                <div class="lg:col-span-4 flex flex-col gap-4">
+                    <button onclick="updateRole('owner')" id="btn-role-owner" class="text-left p-5 rounded-2xl border-2 border-[#1A227F] bg-blue-50 transition-all flex items-center justify-between shadow-sm">
+                        <div>
+                            <h4 class="font-bold text-[#1A227F] text-lg">Level 1: Owner</h4>
+                            <p class="text-xs text-slate-600 mt-1">Akses Total & Konfigurasi</p>
+                        </div>
+                        <span class="text-2xl">👑</span>
+                    </button>
+                    <button onclick="updateRole('spv')" id="btn-role-spv" class="text-left p-5 rounded-2xl border border-slate-200 bg-white hover:bg-slate-50 transition-all flex items-center justify-between">
+                        <div>
+                            <h4 class="font-bold text-slate-800 text-lg">Level 2: Supervisor</h4>
+                            <p class="text-xs text-slate-500 mt-1">Manajemen Stok & Otorisasi</p>
+                        </div>
+                        <span class="text-2xl">🛡️</span>
+                    </button>
+                    <button onclick="updateRole('cashier')" id="btn-role-cashier" class="text-left p-5 rounded-2xl border border-slate-200 bg-white hover:bg-slate-50 transition-all flex items-center justify-between">
+                        <div>
+                            <h4 class="font-bold text-slate-800 text-lg">Level 3: Kasir</h4>
+                            <p class="text-xs text-slate-500 mt-1">Transaksi & Operasional Sesi</p>
+                        </div>
+                        <span class="text-2xl">💳</span>
+                    </button>
                 </div>
-                <div class="p-8 space-y-8 max-h-[600px] overflow-y-auto custom-scroll">
-                    
-                    <div>
-                        <h3 class="font-bold text-indigo-600 mb-3 flex items-center gap-2"><span>01</span> Ringkasan Eksekutif</h3>
-                        <p class="text-sm text-slate-600 leading-relaxed">Sistem POS khusus UMKM dengan model Lifetime License (Lite) dan Subscription (Pro). Berjalan 100% offline menggunakan SQLite dengan aktivasi satu kali di awal via Backend Golang.</p>
-                    </div>
 
-                    <div>
-                        <h3 class="font-bold text-indigo-600 mb-3 flex items-center gap-2"><span>02</span> Target Pengguna</h3>
-                        <p class="text-sm text-slate-600 leading-relaxed">UMKM Ritel & F&B outlet tunggal yang ingin kepastian biaya, bisnis di area internet tidak stabil, dan pengusaha outlet tunggal dengan banyak karyawan.</p>
+                <!-- Radar Chart & User Stories -->
+                <div class="lg:col-span-8 bg-white rounded-3xl border border-slate-200 shadow-sm p-6 flex flex-col md:flex-row items-center gap-8">
+                    <div class="w-full md:w-1/2">
+                        <div class="chart-container">
+                            <canvas id="roleRadarChart"></canvas>
+                        </div>
                     </div>
-
-                    <div>
-                        <h3 class="font-bold text-indigo-600 mb-3 flex items-center gap-2"><span>03</span> Struktur Tier & Model Bisnis</h3>
-                        <p class="text-sm text-slate-600 leading-relaxed">Lite: Lifetime Pay, 1 Outlet, Offline Only. Pro: Subscription, Multi-outlet, Cloud Sync.</p>
-                    </div>
-
-                    <div>
-                        <h3 class="font-bold text-indigo-600 mb-3 flex items-center gap-2"><span>04</span> Fitur Utama (Fungsional)</h3>
-                        <ul class="text-sm text-slate-600 space-y-2 list-disc pl-5">
-                            <li>Aktivasi Lisensi 1x (Online).</li>
-                            <li>Hierarki Role (L1 Owner, L2 Supervisor, L3 Kasir).</li>
-                            <li>Manajemen Stok & Produk (Manual/Excel).</li>
-                            <li>Pencatatan Status Bayar (Tunai/QRIS/Debit).</li>
-                            <li>Print ESC/POS Engine.</li>
+                    <div class="w-full md:w-1/2">
+                        <h3 id="role-title-display" class="text-2xl font-black text-[#1A227F] mb-4 border-b pb-2">Kapasitas Owner</h3>
+                        <ul id="role-stories-display" class="space-y-3 text-sm text-slate-700">
+                            <!-- Injected by JS -->
                         </ul>
-                    </div>
-
-                    <div>
-                        <h3 class="font-bold text-indigo-600 mb-3 flex items-center gap-2"><span>05</span> Aturan Validasi Data</h3>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-xs text-left border-collapse">
-                                <thead class="bg-slate-50">
-                                    <tr>
-                                        <th class="p-2 border border-slate-200">Entitas</th>
-                                        <th class="p-2 border border-slate-200">Validasi</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr><td class="p-2 border border-slate-200 font-bold">Produk</td><td class="p-2 border border-slate-200">Nama (3-100 char), SKU (Unique), Harga (>0)</td></tr>
-                                    <tr><td class="p-2 border border-slate-200 font-bold">User</td><td class="p-2 border border-slate-200">PIN (6 Digit Numeric), Nama (Max 50 char)</td></tr>
-                                    <tr><td class="p-2 border border-slate-200 font-bold">Nota</td><td class="p-2 border border-slate-200">Format: POS-[TGL]-[UNIK]</td></tr>
-                                </tbody>
-                            </table>
+                        <div class="mt-6 p-4 bg-amber-50 rounded-xl border border-amber-100 flex gap-3">
+                            <span class="text-lg">🔒</span>
+                            <p class="text-xs text-amber-800 leading-relaxed">
+                                <strong>Sistem Keamanan PIN:</strong> Jika terjadi 5x kegagalan input PIN berturut-turut pada perangkat, akun akan diblokir sementara (*cooldown*) untuk mencegah peretasan.
+                            </p>
                         </div>
                     </div>
-
-                    <div>
-                        <h3 class="font-bold text-indigo-600 mb-3 flex items-center gap-2"><span>06</span> Spesifikasi Teknis & Stack</h3>
-                        <p class="text-sm text-slate-600 leading-relaxed">Backend: Go (Fiber). Database: SQLite (Local) & Supabase (License Master). Mobile: Flutter. Monitoring: Sentry.</p>
-                    </div>
-
-                    <div>
-                        <h3 class="font-bold text-indigo-600 mb-3 flex items-center gap-2"><span>07</span> User Stories (Detailed)</h3>
-                        <p class="text-sm text-slate-600 leading-relaxed">Tercakup dalam explorer interaktif di atas (Owner, Supervisor, Kasir).</p>
-                    </div>
-
-                    <div>
-                        <h3 class="font-bold text-indigo-600 mb-3 flex items-center gap-2"><span>08</span> Non-Functional Requirements (NFR)</h3>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div class="p-4 bg-emerald-50 rounded-xl">
-                                <canvas id="kpiResponse"></canvas>
-                                <p class="text-[10px] text-center font-bold mt-2">Response &lt; 200ms</p>
-                            </div>
-                            <div class="p-4 bg-indigo-50 rounded-xl">
-                                <canvas id="kpiSync"></canvas>
-                                <p class="text-[10px] text-center font-bold mt-2">Sync 99.9% Accuracy</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div>
-                        <h3 class="font-bold text-indigo-600 mb-3 flex items-center gap-2"><span>09</span> Batasan Ruang Lingkup (Out of Scope)</h3>
-                        <p class="text-sm text-slate-600 leading-relaxed">Tidak ada integrasi otomatis payment gateway, Grab/GoFood, atau sinkronisasi multi-device di Tier 1.</p>
-                    </div>
-
-                    <div>
-                        <h3 class="font-bold text-indigo-600 mb-3 flex items-center gap-2"><span>10</span> Spesifikasi Hardware Min.</h3>
-                        <p class="text-sm text-slate-600 leading-relaxed">Android 10+, RAM 3GB+, Storage 1GB+, Bluetooth Thermal Printer.</p>
-                    </div>
-
-                    <div>
-                        <h3 class="font-bold text-indigo-600 mb-3 flex items-center gap-2"><span>11</span> Asumsi & Ketergantungan</h3>
-                        <p class="text-sm text-slate-600 leading-relaxed">Pengguna memiliki EDC/QRIS sendiri, sistem hanya pencatatan. Backend Go stabil untuk aktivasi awal.</p>
-                    </div>
-
-                    <div>
-                        <h3 class="font-bold text-indigo-600 mb-3 flex items-center gap-2"><span>12</span> Kriteria Kesuksesan (KPI)</h3>
-                        <p class="text-sm text-slate-600 leading-relaxed">Nol data korup saat offline, checkout &lt; 2 detik, durasi onboarding &lt; 15 menit.</p>
-                    </div>
-
                 </div>
             </div>
-        </div>
-    </section>
 
-    <footer class="py-12 bg-white border-t border-slate-100 text-center">
-        <p class="text-sm text-slate-400">&copy; 2026 POSify SaaS Initiative. Dokumen PRD Final v1.2</p>
-    </footer>
+            <!-- Tech Stack Architecture -->
+            <div>
+                <h3 class="text-xl font-bold text-slate-800 mb-6 border-b pb-2">Arsitektur Teknis & Dependensi</h3>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                        <div class="text-3xl mb-3 text-cyan-500">🟦</div>
+                        <h4 class="font-bold text-slate-800">Frontend App</h4>
+                        <p class="text-sm text-slate-600 mt-2">Dibuat dengan <strong>Flutter</strong>. Menghasilkan file Android APK. Mendukung UI reaktif berbasis state lokal.</p>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm border-b-4 border-b-[#1A227F]">
+                        <div class="text-3xl mb-3 text-[#1A227F]">🗄️</div>
+                        <h4 class="font-bold text-slate-800">Database Lokal</h4>
+                        <p class="text-sm text-slate-600 mt-2"><strong>SQLite via Drift ORM</strong>. Menjamin integritas data (*Type-Safety*) dan dapat berjalan 100% offline murni.</p>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                        <div class="text-3xl mb-3 text-blue-400">🌐</div>
+                        <h4 class="font-bold text-slate-800">License Backend</h4>
+                        <p class="text-sm text-slate-600 mt-2">Server mikro menggunakan <strong>Go (Fiber)</strong>. Hanya bertugas memvalidasi *Device Fingerprint* dan memonitor *Heartbeat 24j*.</p>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                        <div class="text-3xl mb-3 text-emerald-500">🔌</div>
+                        <h4 class="font-bold text-slate-800">Hardware Integration</h4>
+                        <p class="text-sm text-slate-600 mt-2">Mendukung protokol <strong>ESC/POS</strong> untuk Printer Thermal Bluetooth & sistem <i>Continuous Scanning</i> Barcode USB/BT.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
 
+        <!-- VIEW 3: OPERATIONAL FLOWS -->
+        <section id="view-flows" class="view-section">
+            <div class="mb-10">
+                <h2 class="text-3xl font-extrabold text-slate-800 mb-3">Pusat Simulasi Alur Kerja (v1.9)</h2>
+                <p class="text-slate-600 leading-relaxed max-w-4xl text-lg">
+                    Pilih skenario operasional dari daftar di bawah. Fitur ini merepresentasikan perjalanan sistem (*System Workflow*) untuk fungsionalitas kunci, membantu Anda memahami interaksi antara pengguna, aplikasi, dan database.
+                </p>
+            </div>
+
+            <div class="bg-white rounded-3xl border border-slate-200 shadow-md p-6 sm:p-10">
+                
+                <!-- Flow Selector & Controls -->
+                <div class="flex flex-col md:flex-row justify-between items-center gap-6 mb-12 bg-slate-50 p-4 rounded-2xl">
+                    <div class="w-full md:w-1/2">
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Pilih Skenario (Sesuai PRD 14.x)</label>
+                        <select id="flow-selector" onchange="loadFlow(this.value)" class="w-full p-3 bg-white border border-slate-300 rounded-xl font-bold text-slate-800 outline-none focus:border-[#1A227F] cursor-pointer">
+                            <option value="activation">14.1 Alur Aktivasi & Heartbeat</option>
+                            <option value="transaction">14.2 Alur Transaksi Kasir (Barcode)</option>
+                            <option value="opname">14.3 Alur Stock Opname (L2)</option>
+                            <option value="closing">14.6 Alur Penutupan Sesi (End-of-Day)</option>
+                            <option value="migration">14.7 Alur Migrasi Perangkat (v1.9)</option>
+                        </select>
+                    </div>
+                    <div class="flex gap-3 w-full md:w-auto">
+                        <button onclick="stepFlow(-1)" class="flex-1 md:flex-none px-6 py-3 bg-white border border-slate-300 text-slate-700 font-bold rounded-xl hover:bg-slate-100 transition-colors">« Mundur</button>
+                        <button onclick="stepFlow(1)" class="flex-1 md:flex-none px-6 py-3 bg-[#1A227F] text-white font-bold rounded-xl shadow-md hover:bg-blue-800 transition-all active:scale-95">Lanjut »</button>
+                    </div>
+                </div>
+
+                <!-- Interactive Stepper -->
+                <div class="relative pt-4 pb-8 overflow-x-auto custom-scroll">
+                    <div id="flow-stepper-container" class="flex items-center min-w-max justify-between px-4">
+                        <!-- Nodes injected via JS -->
+                    </div>
+                </div>
+
+                <!-- Step Details -->
+                <div class="mt-8 p-6 md:p-8 bg-blue-50 border border-blue-100 rounded-2xl min-h-[160px] flex flex-col justify-center">
+                    <div class="flex items-center gap-3 mb-3">
+                        <span id="step-icon-display" class="text-3xl">🔑</span>
+                        <h4 id="step-title-display" class="text-xl font-black text-[#1A227F]">Judul Langkah</h4>
+                    </div>
+                    <p id="step-desc-display" class="text-slate-700 leading-relaxed text-lg font-medium"></p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- VIEW 4: DATA DICTIONARY -->
+        <section id="view-data" class="view-section">
+            <div class="mb-10">
+                <h2 class="text-3xl font-extrabold text-slate-800 mb-3">Kamus & Integritas Data (SQLite)</h2>
+                <p class="text-slate-600 leading-relaxed max-w-4xl text-lg">
+                    Daftar di bawah mendefinisikan batasan input (*constraints*) untuk memastikan konsistensi dan validitas database lokal. Gunakan kotak pencarian untuk menemukan aturan spesifik. Data ini penting untuk konfigurasi <i>Drift ORM</i>.
+                </p>
+            </div>
+
+            <!-- Dashboard Overview Stats -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-center">
+                    <p class="text-3xl font-black text-[#1A227F]">5</p>
+                    <p class="text-xs font-bold text-slate-500 uppercase tracking-widest mt-1">Tabel Utama</p>
+                </div>
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-center">
+                    <p class="text-3xl font-black text-emerald-600">AES</p>
+                    <p class="text-xs font-bold text-slate-500 uppercase tracking-widest mt-1">Standar Enkripsi</p>
+                </div>
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-center">
+                    <p class="text-3xl font-black text-amber-500">1 GB</p>
+                    <p class="text-xs font-bold text-slate-500 uppercase tracking-widest mt-1">Max Storage</p>
+                </div>
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-center">
+                    <p class="text-3xl font-black text-rose-500">id_ID</p>
+                    <p class="text-xs font-bold text-slate-500 uppercase tracking-widest mt-1">Sistem Locale</p>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="p-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
+                    <h3 class="font-bold text-slate-800 flex items-center gap-2"><span>📋</span> Daftar Aturan Validasi</h3>
+                    <div class="relative w-64">
+                        <input type="text" id="data-search" onkeyup="filterDataTable()" placeholder="Cari Field atau Aturan..." class="w-full pl-8 pr-4 py-2 text-sm border border-slate-300 rounded-lg outline-none focus:border-[#1A227F]">
+                        <span class="absolute left-2.5 top-2 opacity-50">🔍</span>
+                    </div>
+                </div>
+                <div class="overflow-x-auto custom-scroll max-h-[500px]">
+                    <table class="w-full text-left border-collapse" id="data-dictionary-table">
+                        <thead class="bg-white sticky top-0 z-10 shadow-sm">
+                            <tr class="text-xs font-black uppercase text-slate-500 tracking-widest">
+                                <th class="px-6 py-4 border-b border-slate-200">Entitas (Tabel)</th>
+                                <th class="px-6 py-4 border-b border-slate-200">Field (Kolom)</th>
+                                <th class="px-6 py-4 border-b border-slate-200">Aturan Validasi (Constraint)</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 bg-white" id="data-table-body">
+                            <!-- Injected via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Scripts for Logic & Interactivity -->
     <script>
-        // Label Wrapping Logic
-        function wrapLabel(label) {
-            if (label.length <= 16) return label;
-            const words = label.split(' ');
-            const lines = [];
-            let currentLine = '';
-            for (let i = 0; i < words.length; i++) {
-                const word = words[i];
-                if ((currentLine + word).length > 16) {
-                    if (currentLine.length > 0) {
-                        lines.push(currentLine.trim());
-                        currentLine = word + ' ';
-                    } else {
-                        lines.push(word);
-                        currentLine = '';
-                    }
-                } else {
-                    currentLine += word + ' ';
-                }
+        // --- 1. STATE MANAGEMENT ---
+        const appState = {
+            currentView: 'overview',
+            activeRole: 'owner',
+            roleChartInstance: null,
+            flowData: {
+                currentKey: 'activation',
+                currentIndex: 0
             }
-            if (currentLine.trim().length > 0) lines.push(currentLine.trim());
-            return lines;
+        };
+
+        // --- 2. DATA STORAGE ---
+        
+        // Role Matrix Data
+        const roleData = {
+            owner: {
+                title: "Kapasitas Owner (L1)",
+                points: [100, 100, 100, 100, 100], // Transaksi, Stok, Otorisasi, Laporan, Pengaturan
+                stories: [
+                    "✔️ <strong>Setup & Keamanan:</strong> Menginput lisensi, mengelola PIN 6-digit Karyawan, dan memantau akun terkunci.",
+                    "✔️ <strong>Konfigurasi Bisnis:</strong> Mengatur persentase Pajak (Inclusive/Exclusive) & Service Charge.",
+                    "✔️ <strong>Manajemen Master:</strong> Tambah produk manual atau Impor massal via Excel/CSV.",
+                    "✔️ <strong>Analitik:</strong> Akses penuh Laporan Laba Rugi dan Tren Penjualan.",
+                    "✔️ <strong>Data Safety:</strong> Akses manual export/backup database ke Google Drive."
+                ]
+            },
+            spv: {
+                title: "Kapasitas Supervisor (L2)",
+                points: [90, 100, 80, 40, 10],
+                stories: [
+                    "✔️ <strong>Akurasi Stok:</strong> Melakukan <i>Stock Opname</i> untuk mencocokkan stok fisik vs sistem.",
+                    "✔️ <strong>Inbound Logistik:</strong> Mencatat barang masuk dari suplier ke inventaris.",
+                    "✔️ <strong>Oversight Keamanan:</strong> Memasukkan PIN untuk mengotorisasi pembatalan (Void) transaksi oleh kasir.",
+                    "✔️ <strong>Monitoring Shift:</strong> Membaca Laporan Shift berjalan untuk cek uang kasir.",
+                    "✔️ <strong>Operasional:</strong> Akses penuh ke layar kasir untuk membantu melayani antrean."
+                ]
+            },
+            cashier: {
+                title: "Kapasitas Kasir (L3)",
+                points: [100, 20, 0, 10, 0],
+                stories: [
+                    "✔️ <strong>Manajemen Shift:</strong> Wajib Buka Shift (input modal) dan Tutup Shift (input fisik uang laci).",
+                    "✔️ <strong>Transaksi Cepat:</strong> Menggunakan <i>Continuous Barcode Scan</i> untuk pelayanan di bawah 1 detik.",
+                    "✔️ <strong>Pencatatan Manual:</strong> Memilih metode pembayaran (Tunai, QRIS, Debit) secara manual.",
+                    "✔️ <strong>Bukti Bayar:</strong> Mencetak struk fisik via printer Bluetooth (Protokol ESC/POS).",
+                    "❌ <strong>Batasan:</strong> Tidak bisa melakukan Void tanpa PIN SPV, dan tidak bisa melihat Laba Rugi."
+                ]
+            }
+        };
+
+        // User Flow Data
+        const flows = {
+            activation: [
+                { icon: "📥", title: "Input Kode", desc: "Pengguna menginput kode lisensi (misal: POS-LIFETIME-KEY) dari email pada layar aktivasi pertama kali." },
+                { icon: "🌐", title: "Validasi API", desc: "Aplikasi mengirim request online 1x ke server Go (Fiber) untuk memvalidasi kode lisensi." },
+                { icon: "🔒", title: "Gen. Fingerprint", desc: "Server meregistrasi Hardware/Device Fingerprint unik agar lisensi terkunci pada perangkat tersebut." },
+                { icon: "💾", title: "Simpan Token", desc: "Token sukses disimpan ke dalam SQLite lokal. Siklus 24-hour Heartbeat dimulai." },
+                { icon: "✈️", title: "Offline Aktif", desc: "Aplikasi masuk ke Mode Offline Murni. Dapat beroperasi penuh hingga 7 hari tanpa koneksi internet sama sekali." }
+            ],
+            transaction: [
+                { icon: "🔑", title: "PIN Login", desc: "Kasir memasukkan 6-digit PIN. Sistem memvalidasi secara lokal tanpa koneksi internet." },
+                { icon: "💸", title: "Buka Shift", desc: "[Opsional] Jika shift belum dibuka, sistem memaksa Kasir menginput nominal Modal Awal di laci." },
+                { icon: "🛒", title: "Scan Barcode", desc: "Kamera/Scanner eksternal membaca SKU secara 'Continuous Scan'. Item langsung masuk keranjang." },
+                { icon: "💳", title: "Checkout", desc: "Pilih status bayar (Tunai/QRIS), gunakan 'Quick Cash Buttons', sistem menghitung Pajak dinamis." },
+                { icon: "🖨️", title: "Selesai & Print", desc: "Stok SQLite berkurang otomatis. Haptic feedback bergetar, dan struk dicetak via Bluetooth ESC/POS." }
+            ],
+            opname: [
+                { icon: "📦", title: "Pilih Barang", desc: "Supervisor (L2) mencari barang yang akan diaudit dari katalog inventaris lokal." },
+                { icon: "🔢", title: "Input Fisik", desc: "SPV menghitung barang aktual di gudang dan memasukkan angkanya ke dalam sistem." },
+                { icon: "⚖️", title: "Sistem Hitung", desc: "Sistem langsung menampilkan Variance / Selisih antara (Jumlah Fisik) dikurangi (Stok Sistem)." },
+                { icon: "📝", title: "Input Alasan", desc: "Jika ada selisih, SPV wajib mengisi kolom alasan (misal: Barang rusak, hilang, dsb)." },
+                { icon: "✅", title: "Update DB", desc: "Stok utama di SQLite diperbarui, dan Log Histori Opname tersimpan permanen untuk diaudit Owner." }
+            ],
+            closing: [
+                { icon: "📊", title: "Cek Analytics", desc: "Kasir melihat Laporan Shift. Sistem menghitung Ekspektasi Laci (Modal Awal + Total Penjualan Tunai)." },
+                { icon: "💵", title: "Hitung Laci", desc: "Kasir menghitung uang fisik yang ada di laci saat ini dan menginputkannya ke sistem." },
+                { icon: "📉", title: "Rekam Selisih", desc: "Sistem mencatat Variance (+/-). Kekurangan kas biasanya menjadi tanggung jawab kasir." },
+                { icon: "🔐", title: "AES-256 Backup", desc: "Failsafe memicu proses enkripsi AES-256 pada file SQLite dan menyimpannya sebagai .enc di HP." },
+                { icon: "🚪", title: "Logout", desc: "Sesi Kasir ditutup. Layar kembali ke halaman pemilihan profil untuk shift berikutnya." }
+            ],
+            migration: [
+                { icon: "🔑", title: "Generate Key", desc: "Di HP Lama, Owner men-generate 'Recovery Key' khusus dan melakukan Export file Backup (.enc)." },
+                { icon: "📤", title: "Transfer File", desc: "File backup terenkripsi dikirim ke HP Baru (via WA, Email, atau G-Drive)." },
+                { icon: "📥", title: "Import Data", desc: "Di HP Baru, instal aplikasi POSify, lalu pilih opsi 'Import Backup' pada layar awal." },
+                { icon: "🔓", title: "Decrypt DB", desc: "Owner memasukkan Recovery Key. Sistem mendekripsi file .enc dan memulihkan seluruh struktur SQLite." },
+                { icon: "📡", title: "Re-bind Lisensi", desc: "Aplikasi meminta koneksi internet 1x untuk melakukan validasi ulang lisensi dan mengunci Device Fingerprint baru." }
+            ]
+        };
+
+        // Data Dictionary
+        const dataDictionary = [
+            { ent: "Produk", field: "Nama Produk", rule: "String, 3 - 100 karakter. Wajib diisi." },
+            { ent: "Produk", field: "SKU / Barcode", rule: "Alphanumeric, 3 - 30 karakter. HARUS UNIK (Primary Identifier)." },
+            { ent: "Produk", field: "Harga Jual", rule: "Numeric. Minimal 0. Tidak boleh negatif." },
+            { ent: "Produk", field: "Stok", rule: "Integer. Default 0. Diizinkan minus jika 'Allow Oversell' aktif." },
+            { ent: "Kategori", field: "Nama Kategori", rule: "String, max 50 karakter. Wajib diisi & Unik." },
+            { ent: "User", field: "Nama User", rule: "String, max 50 karakter. Wajib diisi." },
+            { ent: "User", field: "Role", rule: "Enum: {Owner (L1), Supervisor (L2), Kasir (L3)}." },
+            { ent: "User", field: "PIN", rule: "Numeric, Tepat 6 digit. Wajib unik per perangkat. Anti-pola umum." },
+            { ent: "Profil Toko", field: "Tax & Service", rule: "Numeric (0-100%). Enum tipe pajak {inclusive, exclusive}." },
+            { ent: "Transaksi", field: "Nomor Nota", rule: "Format: POS-YYYYMMDD-HHMMSS. Generate Otomatis." },
+            { ent: "Transaksi", field: "Nilai Transaksi", rule: "Numeric Integer. Integrasi Subtotal + Tax + Svc (Pembulatan Rupiah)." },
+            { ent: "Transaksi", field: "Status Bayar", rule: "Enum: {Tunai, QRIS, Debit, Kredit, Piutang, Void/Batal}." },
+            { ent: "Transaksi", field: "Void By", rule: "Field wajib terisi oleh PIN L2/L1 jika Status Bayar = Void." }
+        ];
+
+        // --- 3. INTERACTION LOGIC ---
+
+        // View Navigation
+        function switchView(viewId) {
+            // Update buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            const activeBtn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.getAttribute('onclick').includes(viewId));
+            if(activeBtn) activeBtn.classList.add('active');
+
+            // Update sections
+            document.querySelectorAll('.view-section').forEach(sec => {
+                sec.classList.remove('active');
+            });
+            document.getElementById(`view-${viewId}`).classList.add('active');
+            
+            appState.currentView = viewId;
+
+            // Trigger specific initializers
+            if (viewId === 'roles') initRoleChart();
+            if (viewId === 'flows') renderFlowStepper();
         }
 
-        const commonTooltip = {
-            callbacks: {
-                title: function(tooltipItems) {
-                    const item = tooltipItems[0];
-                    let label = item.chart.data.labels[item.dataIndex];
-                    return Array.isArray(label) ? label.join(' ') : label;
-                }
+        // Roles & Radar Chart Logic
+        function updateRole(roleId) {
+            appState.activeRole = roleId;
+            
+            // UI Button styling
+            document.querySelectorAll('[id^="btn-role-"]').forEach(btn => {
+                btn.classList.remove('border-2', 'border-[#1A227F]', 'bg-blue-50');
+                btn.classList.add('border', 'border-slate-200', 'bg-white');
+            });
+            document.getElementById(`btn-role-${roleId}`).classList.add('border-2', 'border-[#1A227F]', 'bg-blue-50');
+            document.getElementById(`btn-role-${roleId}`).classList.remove('border', 'border-slate-200', 'bg-white');
+
+            // Text Content
+            const roleInfo = roleData[roleId];
+            document.getElementById('role-title-display').innerText = roleInfo.title;
+            document.getElementById('role-stories-display').innerHTML = roleInfo.stories.map(s => `<li>${s}</li>`).join('');
+
+            // Chart Update
+            if (appState.roleChartInstance) {
+                appState.roleChartInstance.data.datasets[0].data = roleInfo.points;
+                appState.roleChartInstance.update();
             }
-        };
+        }
 
-        // Charts Initialization
-        const ctxMarket = document.getElementById('marketChart').getContext('2d');
-        new Chart(ctxMarket, {
-            type: 'doughnut',
-            data: {
-                labels: ['F&B Kecil', 'Ritel Toko', 'Jasa / Lainnya'].map(wrapLabel),
-                datasets: [{
-                    data: [50, 35, 15],
-                    backgroundColor: ['#4F46E5', '#10B981', '#94A3B8'],
-                    borderWidth: 0
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                cutout: '70%',
-                plugins: {
-                    legend: { position: 'bottom', labels: { font: { family: 'Plus Jakarta Sans', size: 10 } } },
-                    tooltip: commonTooltip
-                }
+        function initRoleChart() {
+            // Prevent "Canvas already in use" error
+            if (appState.roleChartInstance) {
+                appState.roleChartInstance.destroy();
             }
-        });
 
-        const gaugeOptions = {
-            responsive: true,
-            maintainAspectRatio: false,
-            circumference: 180,
-            rotation: 270,
-            cutout: '80%',
-            plugins: { legend: { display: false }, tooltip: { enabled: false } }
-        };
+            const ctx = document.getElementById('roleRadarChart').getContext('2d');
+            
+            Chart.defaults.font.family = "'Inter', sans-serif";
+            
+            appState.roleChartInstance = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['Transaksi', 'Manajemen Stok', 'Otorisasi Void', 'Laporan Laba', 'Konfigurasi App'],
+                    datasets: [{
+                        label: 'Akses Sistem',
+                        data: roleData[appState.activeRole].points,
+                        backgroundColor: 'rgba(26, 34, 127, 0.25)',
+                        borderColor: '#1A227F',
+                        pointBackgroundColor: '#1A227F',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: '#1A227F',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            angleLines: { color: '#E2E8F0' },
+                            grid: { color: '#E2E8F0' },
+                            pointLabels: { font: { size: 11, weight: 'bold' }, color: '#475569' },
+                            ticks: { display: false, min: 0, max: 100, stepSize: 20 }
+                        }
+                    },
+                    plugins: { legend: { display: false }, tooltip: { enabled: false } }
+                }
+            });
+            updateRole(appState.activeRole); // Ensure text matches initial state
+        }
 
-        new Chart(document.getElementById('kpiResponse').getContext('2d'), {
-            type: 'doughnut',
-            data: { datasets: [{ data: [80, 20], backgroundColor: ['#10B981', '#E2E8F0'], borderWidth: 0 }] },
-            options: gaugeOptions
-        });
+        // Flow Stepper Logic
+        function loadFlow(flowKey) {
+            appState.flowData.currentKey = flowKey;
+            appState.flowData.currentIndex = 0;
+            renderFlowStepper();
+        }
 
-        new Chart(document.getElementById('kpiSync').getContext('2d'), {
-            type: 'doughnut',
-            data: { datasets: [{ data: [99, 1], backgroundColor: ['#4F46E5', '#E2E8F0'], borderWidth: 0 }] },
-            options: gaugeOptions
-        });
+        function stepFlow(direction) {
+            const flowArr = flows[appState.flowData.currentKey];
+            const newIndex = appState.flowData.currentIndex + direction;
+            
+            if (newIndex >= 0 && newIndex < flowArr.length) {
+                appState.flowData.currentIndex = newIndex;
+                renderFlowStepper();
+            }
+        }
 
-        // Tab Navigation
-        function showStories(role) {
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            document.querySelectorAll('.role-btn').forEach(b => {
-                b.classList.remove('bg-indigo-600', 'text-white', 'shadow-lg');
-                b.classList.add('bg-white', 'text-slate-600', 'border-slate-200');
+        function setFlowStep(index) {
+            appState.flowData.currentIndex = index;
+            renderFlowStepper();
+        }
+
+        function renderFlowStepper() {
+            const flowArr = flows[appState.flowData.currentKey];
+            const currIdx = appState.flowData.currentIndex;
+            const container = document.getElementById('flow-stepper-container');
+            
+            let html = '';
+            flowArr.forEach((step, index) => {
+                let nodeClass = 'pending';
+                let lineClass = 'pending';
+                
+                if (index < currIdx) { nodeClass = 'completed'; lineClass = 'completed'; }
+                else if (index === currIdx) { nodeClass = 'active'; }
+
+                // The Node
+                html += `
+                    <div class="flex flex-col items-center cursor-pointer w-24 shrink-0 z-10" onclick="setFlowStep(${index})">
+                        <div class="w-14 h-14 rounded-2xl border-2 flex items-center justify-center text-2xl flow-node ${nodeClass}">
+                            ${index < currIdx ? '✅' : step.icon}
+                        </div>
+                        <p class="text-[10px] font-bold text-center mt-3 text-slate-600 uppercase tracking-widest">${step.title}</p>
+                    </div>
+                `;
+
+                // The Connecting Line (except for the last item)
+                if (index < flowArr.length - 1) {
+                    html += `<div class="h-1 flex-1 min-w-[30px] md:min-w-[50px] mx-2 -mt-8 flow-line ${lineClass} rounded-full"></div>`;
+                }
             });
 
-            document.getElementById(role + '-stories').classList.add('active');
-            const btn = document.getElementById('btn-' + role);
-            btn.classList.add('bg-indigo-600', 'text-white', 'shadow-lg');
-            btn.classList.remove('bg-white', 'text-slate-600', 'border-slate-200');
+            container.innerHTML = html;
+
+            // Update Detail Box
+            const currentStepData = flowArr[currIdx];
+            document.getElementById('step-icon-display').innerText = currentStepData.icon;
+            document.getElementById('step-title-display').innerText = `Langkah ${currIdx + 1}: ${currentStepData.title}`;
+            document.getElementById('step-desc-display').innerHTML = currentStepData.desc;
         }
 
-        // Sync Simulation
-        const btnOffline = document.getElementById('btn-offline');
-        const btnOnline = document.getElementById('btn-online');
-        const nodeApp = document.getElementById('node-app');
-        const nodeCloud = document.getElementById('node-cloud');
-        const syncArrow = document.getElementById('sync-arrow');
-        const syncText = document.getElementById('sync-text');
-        const appStatus = document.getElementById('app-status');
-        const cloudStatus = document.getElementById('cloud-status');
+        // Data Dictionary Logic
+        function renderDataDictionary() {
+            const tbody = document.getElementById('data-table-body');
+            tbody.innerHTML = dataDictionary.map(item => `
+                <tr class="hover:bg-slate-50 transition-colors border-b border-slate-100 last:border-0">
+                    <td class="px-6 py-4 text-sm font-bold text-slate-800">${item.ent}</td>
+                    <td class="px-6 py-4 text-xs font-mono font-bold text-blue-700 bg-blue-50/50">${item.field}</td>
+                    <td class="px-6 py-4 text-sm text-slate-600">${item.rule}</td>
+                </tr>
+            `).join('');
+        }
 
-        btnOnline.addEventListener('click', () => {
-            btnOnline.className = 'px-6 py-2 rounded-xl text-sm font-bold bg-indigo-600 text-white shadow-lg transition-all';
-            btnOffline.className = 'px-6 py-2 rounded-xl text-sm font-bold text-slate-400 hover:text-white transition-all';
-            nodeApp.classList.replace('border-amber-500', 'border-indigo-600');
-            nodeApp.classList.replace('status-pulse-off', 'status-pulse-on');
-            nodeCloud.classList.replace('opacity-40', 'opacity-100');
-            nodeCloud.classList.replace('border-slate-700', 'border-emerald-500');
-            syncArrow.innerHTML = '&#x21C4;';
-            syncArrow.classList.replace('text-slate-600', 'text-indigo-400');
-            syncText.innerHTML = 'Sinkronisasi Aktif';
-            appStatus.innerHTML = 'Mengirim data transaksi tertunda... Menerima update katalog cloud.';
-            cloudStatus.innerHTML = 'Memvalidasi Lisensi & Menyesuaikan Inventory Terpusat.';
+        function filterDataTable() {
+            const query = document.getElementById('data-search').value.toLowerCase();
+            const rows = document.querySelectorAll('#data-table-body tr');
+            
+            rows.forEach(row => {
+                const text = row.innerText.toLowerCase();
+                row.style.display = text.includes(query) ? '' : 'none';
+            });
+        }
+
+        // Initialization
+        window.addEventListener('DOMContentLoaded', () => {
+            renderDataDictionary();
+            // Start on Overview Tab
+            switchView('overview');
         });
 
-        btnOffline.addEventListener('click', () => {
-            btnOffline.className = 'px-6 py-2 rounded-xl text-sm font-bold bg-amber-500 text-white shadow-lg transition-all';
-            btnOnline.className = 'px-6 py-2 rounded-xl text-sm font-bold text-slate-400 hover:text-white transition-all';
-            nodeApp.classList.replace('border-indigo-600', 'border-amber-500');
-            nodeApp.classList.replace('status-pulse-on', 'status-pulse-off');
-            nodeCloud.classList.add('opacity-40');
-            nodeCloud.classList.replace('border-emerald-500', 'border-slate-700');
-            syncArrow.innerHTML = '&#x21E2;';
-            syncArrow.classList.replace('text-indigo-400', 'text-slate-600');
-            syncText.innerHTML = 'Push Antrean Tertahan';
-            appStatus.innerHTML = 'Menyimpan transaksi lokal. Mencetak struk via Bluetooth ESC/POS.';
-            cloudStatus.innerHTML = 'Menunggu koneksi dari perangkat untuk validasi lisensi...';
-        });
     </script>
 </body>
 </html>
